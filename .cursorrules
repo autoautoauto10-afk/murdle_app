@@ -1,0 +1,15 @@
+# Cursor Rules for murdle_app
+
+- Use TypeScript for all files.
+- Use Next.js App Router conventions.
+- Use Tailwind CSS for styling.
+- Use Lucide React for icons.
+- Prefer functional components and hooks.
+- Keep components small and focused.
+- Follow the directory structure:
+  - `src/components/ui`: Primitive UI components (shadcn-like).
+  - `src/components/features`: Feature-specific components.
+  - `src/hooks`: Custom hooks.
+  - `src/utils`: Utility functions.
+  - `src/types`: TypeScript types/interfaces.
+  - `src/lib`: Third-party library configurations.
