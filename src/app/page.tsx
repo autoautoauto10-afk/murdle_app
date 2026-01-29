@@ -47,68 +47,112 @@ export default function Home() {
     }
 
     // Clone all grids
+    // Clone all grids
     const newGridState: MultiGridState = {
       suspectWeapon: { ...gridState.suspectWeapon },
       suspectLocation: { ...gridState.suspectLocation },
       weaponLocation: { ...gridState.weaponLocation },
     };
 
-    // IMPORTANT: If we're removing a circle, first clear all auto-filled crosses from that circle
+    // IMPORTANT: If we're removing a circle, clear auto-filled crosses BUT preserve those from other circles
     if (currentMark.state === 'circle' && nextState.state !== 'circle') {
-      // Clear auto-filled crosses in the affected grids
+      // First, identify which cells should be preserved (from other circles)
+      const cellsToPreserve = new Set<string>();
+
       if (gridType === 'suspectWeapon') {
-        // Clear row (all other weapons for this suspect)
+        // Find other circles in this grid and mark their auto-crosses for preservation
+        for (const suspect of puzzle.suspects) {
+          for (const weapon of puzzle.weapons) {
+            const k = `${suspect.id}:${weapon.id}`;
+            if (k !== key && newGridState.suspectWeapon[k]?.state === 'circle') {
+              // This circle should preserve crosses in its row and column
+              puzzle.weapons.forEach(w => {
+                if (w.id !== weapon.id) cellsToPreserve.add(`${suspect.id}:${w.id}`);
+              });
+              puzzle.suspects.forEach(s => {
+                if (s.id !== suspect.id) cellsToPreserve.add(`${s.id}:${weapon.id}`);
+              });
+            }
+          }
+        }
+
+        // Now clear auto-filled crosses that are NOT preserved
         puzzle.weapons.forEach(w => {
           if (w.id !== id2) {
             const k = `${id1}:${w.id}`;
-            if (newGridState.suspectWeapon[k]?.isAutoFilled) {
+            if (newGridState.suspectWeapon[k]?.isAutoFilled && !cellsToPreserve.has(k)) {
               delete newGridState.suspectWeapon[k];
             }
           }
         });
-        // Clear column (all other suspects for this weapon)
         puzzle.suspects.forEach(s => {
           if (s.id !== id1) {
             const k = `${s.id}:${id2}`;
-            if (newGridState.suspectWeapon[k]?.isAutoFilled) {
+            if (newGridState.suspectWeapon[k]?.isAutoFilled && !cellsToPreserve.has(k)) {
               delete newGridState.suspectWeapon[k];
             }
           }
         });
       } else if (gridType === 'suspectLocation') {
-        // Clear row (all other locations for this suspect)
+        // Find other circles and mark their auto-crosses for preservation
+        for (const suspect of puzzle.suspects) {
+          for (const location of puzzle.locations) {
+            const k = `${suspect.id}:${location.id}`;
+            if (k !== key && newGridState.suspectLocation[k]?.state === 'circle') {
+              puzzle.locations.forEach(l => {
+                if (l.id !== location.id) cellsToPreserve.add(`${suspect.id}:${l.id}`);
+              });
+              puzzle.suspects.forEach(s => {
+                if (s.id !== suspect.id) cellsToPreserve.add(`${s.id}:${location.id}`);
+              });
+            }
+          }
+        }
+
         puzzle.locations.forEach(l => {
           if (l.id !== id2) {
             const k = `${id1}:${l.id}`;
-            if (newGridState.suspectLocation[k]?.isAutoFilled) {
+            if (newGridState.suspectLocation[k]?.isAutoFilled && !cellsToPreserve.has(k)) {
               delete newGridState.suspectLocation[k];
             }
           }
         });
-        // Clear column (all other suspects for this location)
         puzzle.suspects.forEach(s => {
           if (s.id !== id1) {
             const k = `${s.id}:${id2}`;
-            if (newGridState.suspectLocation[k]?.isAutoFilled) {
+            if (newGridState.suspectLocation[k]?.isAutoFilled && !cellsToPreserve.has(k)) {
               delete newGridState.suspectLocation[k];
             }
           }
         });
       } else if (gridType === 'weaponLocation') {
-        // Clear row (all other locations for this weapon)
+        // Find other circles and mark their auto-crosses for preservation
+        for (const weapon of puzzle.weapons) {
+          for (const location of puzzle.locations) {
+            const k = `${weapon.id}:${location.id}`;
+            if (k !== key && newGridState.weaponLocation[k]?.state === 'circle') {
+              puzzle.locations.forEach(l => {
+                if (l.id !== location.id) cellsToPreserve.add(`${weapon.id}:${l.id}`);
+              });
+              puzzle.weapons.forEach(w => {
+                if (w.id !== weapon.id) cellsToPreserve.add(`${w.id}:${location.id}`);
+              });
+            }
+          }
+        }
+
         puzzle.locations.forEach(l => {
           if (l.id !== id2) {
             const k = `${id1}:${l.id}`;
-            if (newGridState.weaponLocation[k]?.isAutoFilled) {
+            if (newGridState.weaponLocation[k]?.isAutoFilled && !cellsToPreserve.has(k)) {
               delete newGridState.weaponLocation[k];
             }
           }
         });
-        // Clear column (all other weapons for this location)
         puzzle.weapons.forEach(w => {
           if (w.id !== id1) {
             const k = `${w.id}:${id2}`;
-            if (newGridState.weaponLocation[k]?.isAutoFilled) {
+            if (newGridState.weaponLocation[k]?.isAutoFilled && !cellsToPreserve.has(k)) {
               delete newGridState.weaponLocation[k];
             }
           }

@@ -14,35 +14,42 @@ interface MultiGridProps {
 
 export default function MultiGrid({ suspects, weapons, locations, gridState, onCellClick }: MultiGridProps) {
     return (
-        <div className="space-y-8">
-            {/* Top row: Suspect vs Weapon and Suspect vs Location */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <Grid
-                    category1={suspects}
-                    category2={weapons}
-                    gridState={gridState.suspectWeapon}
-                    onCellClick={(id1, id2) => onCellClick('suspectWeapon', id1, id2)}
-                    label="容疑者 × 凶器"
-                />
-                <Grid
-                    category1={suspects}
-                    category2={locations}
-                    gridState={gridState.suspectLocation}
-                    onCellClick={(id1, id2) => onCellClick('suspectLocation', id1, id2)}
-                    label="容疑者 × 場所"
-                />
-            </div>
+        <div className="overflow-x-auto pb-4">
+            {/* L-shaped unified grid layout */}
+            <div className="inline-block">
+                {/* Top row: Suspect vs Weapon | Suspect vs Location */}
+                <div className="flex">
+                    <Grid
+                        category1={suspects}
+                        category2={weapons}
+                        gridState={gridState.suspectWeapon}
+                        onCellClick={(id1, id2) => onCellClick('suspectWeapon', id1, id2)}
+                        label="容疑者 × 凶器"
+                        compact={true}
+                    />
+                    <Grid
+                        category1={suspects}
+                        category2={locations}
+                        gridState={gridState.suspectLocation}
+                        onCellClick={(id1, id2) => onCellClick('suspectLocation', id1, id2)}
+                        label="容疑者 × 場所"
+                        compact={true}
+                        hideRowHeaders={true}
+                    />
+                </div>
 
-            {/* Bottom row: Weapon vs Location */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <Grid
-                    category1={weapons}
-                    category2={locations}
-                    gridState={gridState.weaponLocation}
-                    onCellClick={(id1, id2) => onCellClick('weaponLocation', id1, id2)}
-                    label="凶器 × 場所"
-                />
-                <div className="hidden lg:block"></div> {/* Spacer for layout */}
+                {/* Bottom row: Weapon vs Location (aligned with weapons column) */}
+                <div className="flex">
+                    <Grid
+                        category1={weapons}
+                        category2={locations}
+                        gridState={gridState.weaponLocation}
+                        onCellClick={(id1, id2) => onCellClick('weaponLocation', id1, id2)}
+                        label="凶器 × 場所"
+                        compact={true}
+                        hideColumnHeaders={true}
+                    />
+                </div>
             </div>
         </div>
     );
