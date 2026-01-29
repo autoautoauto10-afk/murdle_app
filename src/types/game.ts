@@ -9,8 +9,20 @@ export type Entity = {
 
 export type CellState = 'empty' | 'cross' | 'circle';
 
+export type CellMark = {
+  state: CellState;
+  isAutoFilled: boolean; // true if this mark was automatically placed by the system
+};
+
 export type GridState = {
-  [key: string]: CellState; // key format: "category1Id-id1:category2Id-id2"
+  [key: string]: CellMark; // key format: "id1:id2"
+};
+
+// Three separate grids for the complete logic puzzle
+export type MultiGridState = {
+  suspectWeapon: GridState;    // 容疑者 × 凶器
+  suspectLocation: GridState;  // 容疑者 × 場所
+  weaponLocation: GridState;   // 凶器 × 場所
 };
 
 export type Hint = {
