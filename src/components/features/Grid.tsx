@@ -36,7 +36,7 @@ export default function Grid({
                 {!hideColumnHeaders && (
                     <thead>
                         <tr>
-                            <th className={`${cellSize} border-2 border-stone-800 bg-stone-100`}></th>
+                            {!hideRowHeaders && <th className={`${cellSize} border-2 border-stone-800 bg-stone-100`}></th>}
                             {category2.map((item) => (
                                 <th
                                     key={item.id}
