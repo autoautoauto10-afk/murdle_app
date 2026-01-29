@@ -28,8 +28,9 @@ export default function Home() {
     const currentState = gridState[key] || 'empty';
     let nextState: CellState;
 
-    if (currentState === 'empty') nextState = 'cross';
-    else if (currentState === 'cross') nextState = 'circle';
+    // New cycle: empty → circle → cross → empty
+    if (currentState === 'empty') nextState = 'circle';
+    else if (currentState === 'circle') nextState = 'cross';
     else nextState = 'empty';
 
     const newGridState = { ...gridState, [key]: nextState };
@@ -37,16 +38,22 @@ export default function Home() {
     // Auto-cross logic when circle is placed
     if (nextState === 'circle') {
       // Cross out other cells in the same row and column
-      // This is a simplified version, as we need to know which categories are involved
-      // For this prototype, we'll assume category1 and category2 are fixed for this grid
       puzzle?.suspects.forEach(s => {
-        if (s.id !== id1) newGridState[`${s.id}:${id2}`] = 'cross';
+        if (s.id !== id1) {
+          const rowKey = `${s.id}:${id2}`;
+          if (newGridState[rowKey] !== 'circle') {
+            newGridState[rowKey] = 'cross';
+          }
+        }
       });
       puzzle?.weapons.forEach(w => {
-        if (w.id !== id2) newGridState[`${id1}:${w.id}`] = 'cross';
+        if (w.id !== id2) {
+          const colKey = `${id1}:${w.id}`;
+          if (newGridState[colKey] !== 'circle') {
+            newGridState[colKey] = 'cross';
+          }
+        }
       });
-      // Note: In a real Murdle, there are multiple sub-grids (Suspect vs Weapon, Suspect vs Location, Weapon vs Location).
-      // Here we are starting with one primary grid for the prototype.
     }
 
     setGridState(newGridState);
@@ -66,23 +73,23 @@ export default function Home() {
   };
 
   const handleShare = () => {
-    const text = `Detective Logic: Daily Case\n${gameResult === 'won' ? 'CASE CLOSED 🟩' : 'CASE OPEN ⬛️'}\n#MurdleStyle`;
+    const text = `探偵ロジック: 日刊事件簿\n${gameResult === 'won' ? '事件解決 🟩' : '未解決 ⬛️'}\n#探偵ロジック`;
     navigator.clipboard.writeText(text);
-    alert('Result copied to clipboard!');
+    alert('結果をクリップボードにコピーしました！');
   };
 
-  if (!puzzle) return <div className="min-h-screen bg-stone-100 flex items-center justify-center font-mono">Loading Case File...</div>;
+  if (!puzzle) return <div className="min-h-screen bg-stone-100 flex items-center justify-center font-mono">事件ファイルを読み込み中...</div>;
 
   return (
     <main className="min-h-screen bg-stone-100 text-stone-900 font-sans p-4 md:p-8">
       {/* Header */}
       <header className="max-w-4xl mx-auto flex justify-between items-center mb-12 border-b-4 border-stone-800 pb-4">
         <div>
-          <h1 className="text-3xl font-serif font-black uppercase tracking-tighter text-stone-900 flex items-center gap-2">
+          <h1 className="text-3xl font-serif font-black tracking-tighter text-stone-900 flex items-center gap-2">
             <Search className="w-8 h-8" />
-            Detective Logic
+            探偵ロジック
           </h1>
-          <p className="text-xs font-bold font-mono text-stone-500 uppercase">{puzzle.date} // CASE #402</p>
+          <p className="text-xs font-bold font-mono text-stone-500">{puzzle.date} // 事件 #402</p>
         </div>
         <div className="flex gap-4">
           <button className="p-2 bg-stone-200 rounded-full hover:bg-stone-300 transition-colors">
@@ -97,7 +104,7 @@ export default function Home() {
           <Clues hints={hints} onToggleHint={toggleHint} />
 
           <div className="mt-8 bg-amber-50 border-l-4 border-amber-400 p-4 text-sm italic font-serif">
-            "Every clue matters, Detective. Look for the contradictions."
+            「すべてのヒントが重要です、探偵。矛盾を見つけてください。」
           </div>
         </div>
 
@@ -106,7 +113,7 @@ export default function Home() {
           <div className="mb-12">
             <h2 className="text-xl font-serif font-bold mb-6 flex items-center gap-2">
               <Terminal className="w-5 h-5" />
-              Evidence Grid (Suspect x Weapon)
+              証拠グリッド（容疑者 × 凶器）
             </h2>
             <Grid
               category1={puzzle.suspects}
@@ -129,13 +136,13 @@ export default function Home() {
       {gameResult !== 'playing' && (
         <div className="fixed inset-0 bg-stone-900/90 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-stone-50 p-12 rounded-2xl shadow-2xl max-w-md w-full text-center border-8 border-double border-stone-800 animate-in fade-in zoom-in duration-300">
-            <h2 className={`text-5xl font-serif font-black mb-4 uppercase ${gameResult === 'won' ? 'text-green-700' : 'text-red-700'}`}>
-              {gameResult === 'won' ? 'Case Closed' : 'Case Open'}
+            <h2 className={`text-5xl font-serif font-black mb-4 ${gameResult === 'won' ? 'text-green-700' : 'text-red-700'}`}>
+              {gameResult === 'won' ? '事件解決' : '未解決'}
             </h2>
             <p className="text-stone-600 mb-8 font-mono">
               {gameResult === 'won'
-                ? 'Your logic was infallible. The truth has been revealed.'
-                : 'The culprit escaped! Review your notes and try again.'}
+                ? 'あなたの推理は完璧でした。真実が明らかになりました。'
+                : '犯人は逃げました！メモを見直してもう一度挑戦してください。'}
             </p>
             <div className="flex flex-col gap-4">
               <button
@@ -143,13 +150,13 @@ export default function Home() {
                 className="flex items-center justify-center gap-2 bg-stone-800 text-white font-bold py-4 px-8 rounded-lg hover:bg-stone-700 transition-colors"
               >
                 <Share2 className="w-5 h-5" />
-                Share Result
+                結果を共有
               </button>
               <button
                 onClick={() => setGameResult('playing')}
                 className="text-stone-500 underline font-bold"
               >
-                Return to Notes
+                メモに戻る
               </button>
             </div>
           </div>
@@ -157,8 +164,8 @@ export default function Home() {
       )}
 
       {/* Footer */}
-      <footer className="max-w-4xl mx-auto mt-20 text-center text-stone-400 text-xs font-mono uppercase tracking-widest pb-8">
-        &copy; 2026 Detective Logic Engine // Secured Connection
+      <footer className="max-w-4xl mx-auto mt-20 text-center text-stone-400 text-xs font-mono tracking-widest pb-8">
+        &copy; 2026 探偵ロジック・エンジン // セキュア接続
       </footer>
     </main>
   );

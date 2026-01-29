@@ -44,12 +44,12 @@ export default function Grid({ category1, category2, gridState, onCellClick }: G
                                         className="w-20 h-20 border-2 border-stone-800 bg-white cursor-pointer hover:bg-stone-50 transition-colors relative"
                                     >
                                         <div className="flex items-center justify-center w-full h-full">
-                                            {state === 'cross' && <X className="text-red-600 w-12 h-12" strokeWidth={3} />}
                                             {state === 'circle' && (
                                                 <div className="w-12 h-12 rounded-full border-4 border-green-600 flex items-center justify-center">
                                                     <div className="w-4 h-4 rounded-full bg-green-600"></div>
                                                 </div>
                                             )}
+                                            {state === 'cross' && <X className="text-red-600 w-12 h-12" strokeWidth={3} />}
                                         </div>
                                     </td>
                                 );
