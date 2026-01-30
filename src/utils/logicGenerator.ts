@@ -395,20 +395,33 @@ export function generateLogicPuzzle(
         return unsolved;
     }
 
-    // STRATEGY: Build hint pool with priorities
-    type HintCandidate = { text: string; priority: number; category: string };
+    // STRATEGY: Build hint pool with priorities and METADATA
+    type HintCandidate = {
+        text: string;
+        priority: number;
+        category: string;
+        type: 'positive' | 'negative';
+        entity1Id: string;
+        entity2Id: string;
+    };
     const hintCandidates: HintCandidate[] = [];
 
     // Priority 1: Core positive hints (highest impact)
     hintCandidates.push({
         text: `${culpritSuspect.name}は${culpritWeapon.name}を使った。`,
         priority: 100,
-        category: 'suspect-weapon-core'
+        category: 'suspect-weapon-core',
+        type: 'positive',
+        entity1Id: culpritSuspect.id,
+        entity2Id: culpritWeapon.id
     });
     hintCandidates.push({
         text: `${culpritWeapon.name}は${culpritLocation.name}で発見された。`,
         priority: 100,
-        category: 'weapon-location-core'
+        category: 'weapon-location-core',
+        type: 'positive',
+        entity1Id: culpritWeapon.id,
+        entity2Id: culpritLocation.id
     });
 
     // Priority 2: Strategic negative hints (high impact)
@@ -418,14 +431,20 @@ export function generateLogicPuzzle(
                 hintCandidates.push({
                     text: `${suspect.name}は${weapon.name}を使っていない。`,
                     priority: 50,
-                    category: 'suspect-weapon-negative'
+                    category: 'suspect-weapon-negative',
+                    type: 'negative',
+                    entity1Id: suspect.id,
+                    entity2Id: weapon.id
                 });
             });
             locations.forEach(location => {
                 hintCandidates.push({
                     text: `${suspect.name}は${location.name}にいなかった。`,
                     priority: 50,
-                    category: 'suspect-location-negative'
+                    category: 'suspect-location-negative',
+                    type: 'negative',
+                    entity1Id: suspect.id,
+                    entity2Id: location.id
                 });
             });
         }
@@ -437,7 +456,10 @@ export function generateLogicPuzzle(
                 hintCandidates.push({
                     text: `${weapon.name}は${location.name}では使われなかった。`,
                     priority: 50,
-                    category: 'weapon-location-negative'
+                    category: 'weapon-location-negative',
+                    type: 'negative',
+                    entity1Id: weapon.id,
+                    entity2Id: location.id
                 });
             });
         }
