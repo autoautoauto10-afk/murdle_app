@@ -9,6 +9,7 @@ import FinalAnswer from '@/components/features/FinalAnswer';
 import { Search, Settings, Share2 } from 'lucide-react';
 
 export default function Home() {
+  const [puzzleSeed, setPuzzleSeed] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [puzzle, setPuzzle] = useState<PuzzleData | null>(null);
   const [gridState, setGridState] = useState<MultiGridState>({
     suspectWeapon: {},
@@ -19,12 +20,11 @@ export default function Home() {
   const [gameResult, setGameResult] = useState<'playing' | 'won' | 'lost'>('playing');
 
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const generated = generateDailyPuzzle(today);
+    const generated = generateDailyPuzzle(puzzleSeed);
     console.log('Puzzle Data:', generated); // Debug log
     setPuzzle(generated);
     setHints(generated.hints);
-  }, []);
+  }, [puzzleSeed]);
 
   const handleCellClick = (
     gridType: 'suspectWeapon' | 'suspectLocation' | 'weaponLocation',
@@ -300,6 +300,23 @@ export default function Home() {
     alert('結果をクリップボードにコピーしました！');
   };
 
+  const handleGenerateNewCase = () => {
+    const confirmed = confirm('新しい事件を生成します。現在の進行状況はリセットされますがよろしいですか？');
+    if (confirmed) {
+      // Generate new random seed
+      const newSeed = `random-${Date.now()}-${Math.random()}`;
+      setPuzzleSeed(newSeed);
+
+      // Reset all state
+      setGridState({
+        suspectWeapon: {},
+        suspectLocation: {},
+        weaponLocation: {},
+      });
+      setGameResult('playing');
+    }
+  };
+
   if (!puzzle) return <div className="min-h-screen bg-stone-100 flex items-center justify-center font-mono">事件ファイルを読み込み中...</div>;
 
   return (
@@ -314,6 +331,12 @@ export default function Home() {
           <p className="text-xs font-bold font-mono text-stone-500">{puzzle.date} // 事件 #402</p>
         </div>
         <div className="flex gap-4">
+          <button
+            onClick={handleGenerateNewCase}
+            className="flex items-center gap-2 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-600 transition-colors font-bold text-sm"
+          >
+            🔄 別の事件を解決する
+          </button>
           <button className="p-2 bg-stone-200 rounded-full hover:bg-stone-300 transition-colors">
             <Settings className="w-6 h-6" />
           </button>
