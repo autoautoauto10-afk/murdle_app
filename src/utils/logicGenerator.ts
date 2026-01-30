@@ -213,7 +213,7 @@ class PuzzleSolver {
                 this.locations.forEach(location => {
                     if (location.id !== circleLocation.id) {
                         const key = `${weapon.id}:${location.id}`;
-                        if (this.grid[key]?.state === 'empty') {
+                        if (this.grid[query]?.state === 'empty') {
                             this.grid[key] = { state: 'cross', isAutoFilled: true };
                             changed = true;
                         }
@@ -334,7 +334,7 @@ export function generateLogicPuzzle(
     seed: number
 ): { solution: { suspectId: string; weaponId: string; locationId: string }; hints: Hint[] } {
 
-    console.log('--- Puzzle Generation Start ---');
+    console.log('=== ELEGANT PUZZLE GENERATION ===');
 
     const random = mulberry32(seed);
 
@@ -357,89 +357,169 @@ export function generateLogicPuzzle(
         locationId: shuffledLocations[0].id,
     };
 
-    console.log('[Hint Generator] Solution:', solution);
-
-    // STEP 1: Generate MASSIVE hint pool (all possible hints)
-    const hintPool: string[] = [];
-
-    // Positive hints (from solution)
     const culpritSuspect = suspects.find(s => s.id === solution.suspectId)!;
     const culpritWeapon = weapons.find(w => w.id === solution.weaponId)!;
     const culpritLocation = locations.find(l => l.id === solution.locationId)!;
 
-    hintPool.push(`${culpritSuspect.name}は${culpritWeapon.name}を使った。`);
-    hintPool.push(`${culpritWeapon.name}は${culpritLocation.name}で発見された。`);
-    hintPool.push(`${culpritSuspect.name}は${culpritLocation.name}にいた。`);
-
-    // Negative hints (everything that's NOT the solution)
-    suspects.forEach(suspect => {
-        weapons.forEach(weapon => {
-            const isWrong = suspect.id !== solution.suspectId || weapon.id !== solution.weaponId;
-            if (isWrong) {
-                hintPool.push(`${suspect.name}は${weapon.name}を使っていない。`);
-            }
-        });
+    console.log('[Generator] Solution:', {
+        suspect: culpritSuspect.name,
+        weapon: culpritWeapon.name,
+        location: culpritLocation.name
     });
 
-    suspects.forEach(suspect => {
-        locations.forEach(location => {
-            const isWrong = suspect.id !== solution.suspectId || location.id !== solution.locationId;
-            if (isWrong) {
-                hintPool.push(`${suspect.name}は${location.name}にいなかった。`);
+    // Helper: Count unsolved cells
+    function countUnsolvedCells(hints: Hint[]): number {
+        const solver = new PuzzleSolver(suspects, weapons, locations, hints);
+        solver.solve();
+
+        let unsolved = 0;
+        for (const suspect of suspects) {
+            for (const weapon of weapons) {
+                const key = `${suspect.id}:${weapon.id}`;
+                const state = solver.getGridState()[key];
+                if (!state || state.state === 'empty') unsolved++;
             }
-        });
+            for (const location of locations) {
+                const key = `${suspect.id}:${location.id}`;
+                const state = solver.getGridState()[key];
+                if (!state || state.state === 'empty') unsolved++;
+            }
+        }
+        for (const weapon of weapons) {
+            for (const location of locations) {
+                const key = `${weapon.id}:${location.id}`;
+                const state = solver.getGridState()[key];
+                if (!state || state.state === 'empty') unsolved++;
+            }
+        }
+        return unsolved;
+    }
+
+    // STRATEGY: Build hint pool with priorities
+    type HintCandidate = { text: string; priority: number; category: string };
+    const hintCandidates: HintCandidate[] = [];
+
+    // Priority 1: Core positive hints (highest impact)
+    hintCandidates.push({
+        text: `${culpritSuspect.name}は${culpritWeapon.name}を使った。`,
+        priority: 100,
+        category: 'suspect-weapon-core'
+    });
+    hintCandidates.push({
+        text: `${culpritWeapon.name}は${culpritLocation.name}で発見された。`,
+        priority: 100,
+        category: 'weapon-location-core'
+    });
+
+    // Priority 2: Strategic negative hints (high impact)
+    suspects.forEach(suspect => {
+        if (suspect.id !== solution.suspectId) {
+            weapons.forEach(weapon => {
+                hintCandidates.push({
+                    text: `${suspect.name}は${weapon.name}を使っていない。`,
+                    priority: 50,
+                    category: 'suspect-weapon-negative'
+                });
+            });
+            locations.forEach(location => {
+                hintCandidates.push({
+                    text: `${suspect.name}は${location.name}にいなかった。`,
+                    priority: 50,
+                    category: 'suspect-location-negative'
+                });
+            });
+        }
     });
 
     weapons.forEach(weapon => {
-        locations.forEach(location => {
-            const isWrong = weapon.id !== solution.weaponId || location.id !== solution.locationId;
-            if (isWrong) {
-                hintPool.push(`${weapon.name}は${location.name}では使われなかった。`);
-            }
-        });
+        if (weapon.id !== solution.weaponId) {
+            locations.forEach(location => {
+                hintCandidates.push({
+                    text: `${weapon.name}は${location.name}では使われなかった。`,
+                    priority: 50,
+                    category: 'weapon-location-negative'
+                });
+            });
+        }
     });
 
-    // Shuffle the pool
-    const shuffledPool = shuffle(hintPool);
-    console.log('Pool Size:', shuffledPool.length);
+    // Shuffle within priority groups, then sort by priority
+    const shuffledCandidates = shuffle(hintCandidates).sort((a, b) => b.priority - a.priority);
 
-    // STEP 2: Accumulation loop - add hints one by one until solved
+    console.log(`[Generator] Created ${shuffledCandidates.length} hint candidates`);
+
+    // SMART ACCUMULATION: Add hints that make meaningful progress
     const selectedHints: Hint[] = [];
+    let lastUnsolvedCount = countUnsolvedCells([]);
     let hintId = 1;
-    let loopCount = 0;
-    const maxLoops = shuffledPool.length;
 
-    for (const hintText of shuffledPool) {
-        loopCount++;
+    const targetHintCount = suspects.length === 3 ? 5 : 9; // Target: 5 for 3x3, 9 for 4x4
+    const maxHints = suspects.length * 3; // Safety limit
 
-        // Add this hint to the list
-        selectedHints.push({
-            id: `h${hintId++}`,
-            text: hintText,
+    console.log(`[Generator] Target hint count: ${targetHintCount}, Max: ${maxHints}`);
+    console.log(`[Generator] Initial unsolved cells: ${lastUnsolvedCount}`);
+
+    for (const candidate of shuffledCandidates) {
+        // Try adding this hint
+        const testHints = [...selectedHints, {
+            id: `h${hintId}`,
+            text: candidate.text,
             isStrikethrough: false
-        });
+        }];
 
-        // Test if puzzle is now solved
-        const solver = new PuzzleSolver(suspects, weapons, locations, selectedHints);
-        solver.solve();
-        const solved = solver.isSolved();
+        const newUnsolvedCount = countUnsolvedCells(testHints);
+        const progress = lastUnsolvedCount - newUnsolvedCount;
 
-        console.log(`Loop ${loopCount}: Hint added. Solved? ${solved}`);
-        console.log(`  Hint: "${hintText}"`);
+        // Add hint if it makes progress OR if we need more hints to reach target
+        const shouldAdd = progress > 0 || (selectedHints.length < targetHintCount && newUnsolvedCount > 0);
 
-        if (solved) {
-            console.log('✅ Puzzle is SOLVABLE!');
-            break;
-        }
+        if (shouldAdd) {
+            selectedHints.push({
+                id: `h${hintId++}`,
+                text: candidate.text,
+                isStrikethrough: false
+            });
 
-        if (loopCount >= maxLoops) {
-            console.warn('⚠️ Reached max loops without solving!');
-            break;
+            console.log(`[${selectedHints.length}] Added "${candidate.text}"`);
+            console.log(`    Progress: ${progress} cells, Unsolved: ${newUnsolvedCount}`);
+
+            lastUnsolvedCount = newUnsolvedCount;
+
+            // Check if solved
+            const solver = new PuzzleSolver(suspects, weapons, locations, selectedHints);
+            solver.solve();
+            if (solver.isSolved()) {
+                console.log('✅ PUZZLE SOLVED!');
+                break;
+            }
+
+            // Stop if we hit max hints
+            if (selectedHints.length >= maxHints) {
+                console.log('⚠️ Reached max hint limit');
+                break;
+            }
         }
     }
 
-    console.log('Final Hints:', selectedHints.length);
-    console.log('Selected hints:', selectedHints.map(h => h.text));
+    // Final verification
+    const finalSolver = new PuzzleSolver(suspects, weapons, locations, selectedHints);
+    finalSolver.solve();
+    const isSolvable = finalSolver.isSolved();
+
+    console.log(`[Generator] Final hint count: ${selectedHints.length}`);
+    console.log(`[Generator] Solvable: ${isSolvable}`);
+
+    if (!isSolvable) {
+        console.warn('⚠️ Puzzle is not fully solvable with current hints!');
+        console.warn('Adding emergency hint to ensure solvability...');
+
+        // Add the third core positive hint as emergency
+        selectedHints.push({
+            id: `h${selectedHints.length + 1}`,
+            text: `${culpritSuspect.name}は${culpritLocation.name}にいた。`,
+            isStrikethrough: false
+        });
+    }
 
     // Add identity clue
     const identityClueType = random() > 0.5 ? 'weapon' : 'location';
@@ -458,7 +538,8 @@ export function generateLogicPuzzle(
         type: 'identity'
     });
 
-    console.log('--- Puzzle Generation Complete ---');
+    console.log('=== GENERATION COMPLETE ===');
+    console.log(`Total hints (including identity): ${selectedHints.length}`);
 
     return { solution, hints: selectedHints };
 }
