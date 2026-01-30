@@ -1,4 +1,4 @@
-import { PuzzleData, Entity, Hint, GridState } from '@/types/game';
+import { Entity, Hint, GridState } from '@/types/game';
 
 interface Solution {
     [suspectId: string]: {
