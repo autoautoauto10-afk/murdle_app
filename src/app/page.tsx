@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { generateDailyPuzzle } from '@/utils/puzzle';
-import { PuzzleData, MultiGridState, CellMark, Hint } from '@/types/game';
+import { PuzzleData, MultiGridState, CellMark, Hint, Entity } from '@/types/game';
 import MultiGrid from '@/components/features/MultiGrid';
 import Clues from '@/components/features/Clues';
 import FinalAnswer from '@/components/features/FinalAnswer';
