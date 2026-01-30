@@ -289,7 +289,7 @@ class PuzzleSolver {
         return changed;
     }
 
-    // CRITICAL: Check if ALL cells are filled (NO cheating with solution!)
+    // Check if ALL cells are filled (NO cheating with solution!)
     isSolved(): boolean {
         // Check every single cell
         for (const suspect of this.suspects) {
@@ -327,33 +327,49 @@ class PuzzleSolver {
     }
 }
 
-// Canonical Key Helper: Ensures consistent ID ordering
-// Priority: Suspect > Weapon > Location
-function getCanonicalKey(
-    id1: string,
-    id2: string,
-    categories: { suspects: Entity[], weapons: Entity[], locations: Entity[] }
-): string {
-    const isSuspect = (id: string) => categories.suspects.some(s => s.id === id);
-    const isWeapon = (id: string) => categories.weapons.some(w => w.id === id);
-    const isLocation = (id: string) => categories.locations.some(l => l.id === id);
+// PHASE 2: Remove redundant hints
+function removeRedundantHints(
+    hints: Hint[],
+    suspects: Entity[],
+    weapons: Entity[],
+    locations: Entity[]
+): Hint[] {
+    console.log('[Pruning] Starting redundancy removal...');
+    console.log(`[Pruning] Initial hint count: ${hints.length}`);
 
-    let key = "";
+    const essential: Hint[] = [];
+    let removedCount = 0;
 
-    // Determine category and order correctly
-    if (isSuspect(id1)) {
-        if (isWeapon(id2)) key = `${id1}:${id2}`;       // Suspect:Weapon
-        else if (isLocation(id2)) key = `${id1}:${id2}`; // Suspect:Location
-    } else if (isWeapon(id1)) {
-        if (isSuspect(id2)) key = `${id2}:${id1}`;       // Suspect:Weapon (Swap!)
-        else if (isLocation(id2)) key = `${id1}:${id2}`; // Weapon:Location
-    } else if (isLocation(id1)) {
-        if (isSuspect(id2)) key = `${id2}:${id1}`;       // Suspect:Location (Swap!)
-        else if (isWeapon(id2)) key = `${id2}:${id1}`;   // Weapon:Location (Swap!)
+    for (let i = 0; i < hints.length; i++) {
+        const currentHint = hints[i];
+
+        // IMPORTANT: Protect identity clue (starts with 🚨)
+        if (currentHint.text.startsWith('🚨')) {
+            essential.push(currentHint);
+            console.log(`[Pruning] Protected identity clue: "${currentHint.text}"`);
+            continue;
+        }
+
+        // Test: remove this hint and see if still solvable
+        const testHints = hints.filter((_, index) => index !== i);
+        const solver = new PuzzleSolver(suspects, weapons, locations, testHints);
+        solver.solve();
+
+        if (!solver.isSolved()) {
+            // Without this hint, puzzle is NOT solvable → ESSENTIAL
+            essential.push(currentHint);
+            console.log(`[Pruning] ✓ Essential: "${currentHint.text}"`);
+        } else {
+            // Without this hint, puzzle is STILL solvable → REDUNDANT
+            removedCount++;
+            console.log(`[Pruning] ✗ Redundant: "${currentHint.text}"`);
+        }
     }
 
-    // Guard: if unable to determine, return as-is (should not happen)
-    return key || `${id1}:${id2}`;
+    console.log(`[Pruning] Removed ${removedCount} redundant hints`);
+    console.log(`[Pruning] Final essential hint count: ${essential.length}`);
+
+    return essential;
 }
 
 export function generateLogicPuzzle(
@@ -363,7 +379,7 @@ export function generateLogicPuzzle(
     seed: number
 ): { solution: { suspectId: string; weaponId: string; locationId: string }; hints: Hint[] } {
 
-    console.log('=== ELEGANT PUZZLE GENERATION ===');
+    console.log('=== SIMPLE 2-PHASE PUZZLE GENERATION ===');
 
     const random = mulberry32(seed);
 
@@ -396,203 +412,74 @@ export function generateLogicPuzzle(
         location: culpritLocation.name
     });
 
-    // Helper: Count unsolved cells
-    function countUnsolvedCells(hints: Hint[]): number {
-        const solver = new PuzzleSolver(suspects, weapons, locations, hints);
-        solver.solve();
+    // ===== PHASE 1: SIMPLE GENERATION (with possible redundancy) =====
+    console.log('[Phase 1] Generating hints until puzzle is solvable...');
 
-        let unsolved = 0;
-        for (const suspect of suspects) {
-            for (const weapon of weapons) {
-                const key = `${suspect.id}:${weapon.id}`;
-                const state = solver.getGridState()[key];
-                if (!state || state.state === 'empty') unsolved++;
-            }
-            for (const location of locations) {
-                const key = `${suspect.id}:${location.id}`;
-                const state = solver.getGridState()[key];
-                if (!state || state.state === 'empty') unsolved++;
-            }
-        }
-        for (const weapon of weapons) {
-            for (const location of locations) {
-                const key = `${weapon.id}:${location.id}`;
-                const state = solver.getGridState()[key];
-                if (!state || state.state === 'empty') unsolved++;
-            }
-        }
-        return unsolved;
-    }
+    // Build hint pool (all possible hints)
+    const hintPool: string[] = [];
 
-    // STRATEGY: Build hint pool with priorities and METADATA
-    type HintCandidate = {
-        text: string;
-        priority: number;
-        category: string;
-        type: 'positive' | 'negative';
-        entity1Id: string;
-        entity2Id: string;
-    };
-    const hintCandidates: HintCandidate[] = [];
+    // Positive hints
+    hintPool.push(`${culpritSuspect.name}は${culpritWeapon.name}を使った。`);
+    hintPool.push(`${culpritWeapon.name}は${culpritLocation.name}で発見された。`);
+    hintPool.push(`${culpritSuspect.name}は${culpritLocation.name}にいた。`);
 
-    // Priority 1: Core positive hints (highest impact)
-    hintCandidates.push({
-        text: `${culpritSuspect.name}は${culpritWeapon.name}を使った。`,
-        priority: 100,
-        category: 'suspect-weapon-core',
-        type: 'positive',
-        entity1Id: culpritSuspect.id,
-        entity2Id: culpritWeapon.id
-    });
-    hintCandidates.push({
-        text: `${culpritWeapon.name}は${culpritLocation.name}で発見された。`,
-        priority: 100,
-        category: 'weapon-location-core',
-        type: 'positive',
-        entity1Id: culpritWeapon.id,
-        entity2Id: culpritLocation.id
-    });
-
-    // Priority 2: Strategic negative hints (high impact)
+    // Negative hints
     suspects.forEach(suspect => {
-        if (suspect.id !== solution.suspectId) {
-            weapons.forEach(weapon => {
-                hintCandidates.push({
-                    text: `${suspect.name}は${weapon.name}を使っていない。`,
-                    priority: 50,
-                    category: 'suspect-weapon-negative',
-                    type: 'negative',
-                    entity1Id: suspect.id,
-                    entity2Id: weapon.id
-                });
-            });
-            locations.forEach(location => {
-                hintCandidates.push({
-                    text: `${suspect.name}は${location.name}にいなかった。`,
-                    priority: 50,
-                    category: 'suspect-location-negative',
-                    type: 'negative',
-                    entity1Id: suspect.id,
-                    entity2Id: location.id
-                });
-            });
-        }
+        weapons.forEach(weapon => {
+            const isWrong = suspect.id !== solution.suspectId || weapon.id !== solution.weaponId;
+            if (isWrong) {
+                hintPool.push(`${suspect.name}は${weapon.name}を使っていない。`);
+            }
+        });
+    });
+
+    suspects.forEach(suspect => {
+        locations.forEach(location => {
+            const isWrong = suspect.id !== solution.suspectId || location.id !== solution.locationId;
+            if (isWrong) {
+                hintPool.push(`${suspect.name}は${location.name}にいなかった。`);
+            }
+        });
     });
 
     weapons.forEach(weapon => {
-        if (weapon.id !== solution.weaponId) {
-            locations.forEach(location => {
-                hintCandidates.push({
-                    text: `${weapon.name}は${location.name}では使われなかった。`,
-                    priority: 50,
-                    category: 'weapon-location-negative',
-                    type: 'negative',
-                    entity1Id: weapon.id,
-                    entity2Id: location.id
-                });
-            });
-        }
+        locations.forEach(location => {
+            const isWrong = weapon.id !== solution.weaponId || location.id !== solution.locationId;
+            if (isWrong) {
+                hintPool.push(`${weapon.name}は${location.name}では使われなかった。`);
+            }
+        });
     });
 
-    // Shuffle within priority groups, then sort by priority
-    const shuffledCandidates = shuffle(hintCandidates).sort((a, b) => b.priority - a.priority);
+    // Shuffle hint pool
+    const shuffledPool = shuffle(hintPool);
+    console.log(`[Phase 1] Generated ${shuffledPool.length} hint candidates`);
 
-    console.log(`[Generator] Created ${shuffledCandidates.length} hint candidates`);
-
-    // SMART ACCUMULATION: Add hints that make meaningful progress
-    const selectedHints: Hint[] = [];
-    let lastUnsolvedCount = countUnsolvedCells([]);
+    // Add hints one by one until solvable
+    const generatedHints: Hint[] = [];
     let hintId = 1;
 
-    const maxHints = suspects.length * 3; // Safety limit
-
-    console.log(`[Generator] Max hints: ${maxHints}`);
-    console.log(`[Generator] Initial unsolved cells: ${lastUnsolvedCount}`);
-
-    let skippedCount = 0;
-
-    for (const candidate of shuffledCandidates) {
-        // STEP 1: Get current grid state from already selected hints
-        const tempSolver = new PuzzleSolver(suspects, weapons, locations, selectedHints);
-        tempSolver.solve();
-        const currentGrid = tempSolver.getGridState();
-
-        // STEP 2: Normalize key to match solver's grid structure
-        const key = getCanonicalKey(
-            candidate.entity1Id,
-            candidate.entity2Id,
-            { suspects, weapons, locations }
-        );
-        const cellState = currentGrid[key]?.state;
-
-        // STEP 3: Strict redundancy check - skip if already determined
-        if (cellState === 'circle' || cellState === 'cross') {
-            skippedCount++;
-            console.log(`[Skipped] "${candidate.text}" (Cell ${key} is already ${cellState})`);
-            continue; // Skip redundant hint
-        }
-
-        // STEP 4: Test if adding this hint makes progress
-        const testHints = [...selectedHints, {
-            id: `h${hintId}`,
-            text: candidate.text,
-            isStrikethrough: false
-        }];
-
-        const newUnsolvedCount = countUnsolvedCells(testHints);
-        const progress = lastUnsolvedCount - newUnsolvedCount;
-
-        // STEP 5: Add hint ONLY if it makes progress (no target padding)
-        const shouldAdd = progress > 0;
-
-        if (shouldAdd) {
-            selectedHints.push({
-                id: `h${hintId++}`,
-                text: candidate.text,
-                isStrikethrough: false
-            });
-
-            console.log(`[${selectedHints.length}] Added "${candidate.text}"`);
-            console.log(`    Progress: ${progress} cells, Unsolved: ${newUnsolvedCount}`);
-
-            lastUnsolvedCount = newUnsolvedCount;
-
-            // Check if solved
-            const solver = new PuzzleSolver(suspects, weapons, locations, selectedHints);
-            solver.solve();
-            if (solver.isSolved()) {
-                console.log('✅ PUZZLE SOLVED!');
-                break;
-            }
-
-            // Stop if we hit max hints
-            if (selectedHints.length >= maxHints) {
-                console.log('⚠️ Reached max hint limit');
-                break;
-            }
-        }
-    }
-
-    console.log(`[Generator] Skipped ${skippedCount} redundant hints`);
-
-    // Final verification
-    const finalSolver = new PuzzleSolver(suspects, weapons, locations, selectedHints);
-    finalSolver.solve();
-    const isSolvable = finalSolver.isSolved();
-
-    console.log(`[Generator] Final hint count: ${selectedHints.length}`);
-    console.log(`[Generator] Solvable: ${isSolvable}`);
-
-    if (!isSolvable) {
-        console.warn('⚠️ Puzzle is not fully solvable with current hints!');
-        console.warn('Adding emergency hint to ensure solvability...');
-
-        // Add the third core positive hint as emergency
-        selectedHints.push({
-            id: `h${selectedHints.length + 1}`,
-            text: `${culpritSuspect.name}は${culpritLocation.name}にいた。`,
+    for (const hintText of shuffledPool) {
+        generatedHints.push({
+            id: `h${hintId++}`,
+            text: hintText,
             isStrikethrough: false
         });
+
+        // Test if solved
+        const solver = new PuzzleSolver(suspects, weapons, locations, generatedHints);
+        solver.solve();
+
+        if (solver.isSolved()) {
+            console.log(`[Phase 1] ✅ Puzzle solved with ${generatedHints.length} hints`);
+            break;
+        }
+
+        // Safety check
+        if (generatedHints.length >= shuffledPool.length) {
+            console.warn('[Phase 1] ⚠️ Used all hints but puzzle not solved!');
+            break;
+        }
     }
 
     // Add identity clue
@@ -605,17 +492,30 @@ export function generateLogicPuzzle(
         identityClueText = `犯人は${culpritLocation.name}にいた形跡がある。`;
     }
 
-    selectedHints.push({
-        id: `h${selectedHints.length + 1}`,
+    generatedHints.push({
+        id: `h${generatedHints.length + 1}`,
         text: `🚨 ${identityClueText}`,
         isStrikethrough: false,
         type: 'identity'
     });
 
-    console.log('=== GENERATION COMPLETE ===');
-    console.log(`Total hints (including identity): ${selectedHints.length}`);
+    console.log(`[Phase 1] Total hints (with identity): ${generatedHints.length}`);
 
-    return { solution, hints: selectedHints };
+    // ===== PHASE 2: BACKWARD PRUNING (remove redundancy) =====
+    console.log('[Phase 2] Removing redundant hints...');
+
+    const minimalHints = removeRedundantHints(
+        generatedHints,
+        suspects,
+        weapons,
+        locations
+    );
+
+    console.log('=== GENERATION COMPLETE ===');
+    console.log(`Final hint count: ${minimalHints.length}`);
+    console.log(`Removed ${generatedHints.length - minimalHints.length} redundant hints`);
+
+    return { solution, hints: minimalHints };
 }
 
 // Seedable random number generator
