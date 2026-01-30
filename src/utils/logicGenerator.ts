@@ -192,7 +192,7 @@ class PuzzleSolver {
     private applyDeductionRules(): boolean {
         let changed = false;
 
-        // Rule 1: If there's a circle in a row/column, cross out other cells in that row/column
+        // Rule 1: If there's a circle in a row, cross out other cells in that row
         // For Suspect-Weapon grid
         this.suspects.forEach(suspect => {
             const circleWeapon = this.weapons.find(weapon => {
@@ -213,8 +213,45 @@ class PuzzleSolver {
             }
         });
 
-        // Similar rules for other grids...
-        // (Implement similar logic for Suspect-Location and Weapon-Location)
+        // For Suspect-Location grid
+        this.suspects.forEach(suspect => {
+            const circleLocation = this.locations.find(location => {
+                const key = `${suspect.id}:${location.id}`;
+                return this.grid[key]?.state === 'circle';
+            });
+
+            if (circleLocation) {
+                this.locations.forEach(location => {
+                    if (location.id !== circleLocation.id) {
+                        const key = `${suspect.id}:${location.id}`;
+                        if (this.grid[key]?.state === 'empty') {
+                            this.grid[key] = { state: 'cross', isAutoFilled: true };
+                            changed = true;
+                        }
+                    }
+                });
+            }
+        });
+
+        // For Weapon-Location grid
+        this.weapons.forEach(weapon => {
+            const circleLocation = this.locations.find(location => {
+                const key = `${weapon.id}:${location.id}`;
+                return this.grid[key]?.state === 'circle';
+            });
+
+            if (circleLocation) {
+                this.locations.forEach(location => {
+                    if (location.id !== circleLocation.id) {
+                        const key = `${weapon.id}:${location.id}`;
+                        if (this.grid[key]?.state === 'empty') {
+                            this.grid[key] = { state: 'cross', isAutoFilled: true };
+                            changed = true;
+                        }
+                    }
+                });
+            }
+        });
 
         // Rule 2: If only one empty cell in a row, it must be a circle
         this.suspects.forEach(suspect => {
@@ -225,6 +262,32 @@ class PuzzleSolver {
 
             if (emptyCells.length === 1) {
                 const key = `${suspect.id}:${emptyCells[0].id}`;
+                this.grid[key] = { state: 'circle', isAutoFilled: true };
+                changed = true;
+            }
+        });
+
+        this.suspects.forEach(suspect => {
+            const emptyCells = this.locations.filter(location => {
+                const key = `${suspect.id}:${location.id}`;
+                return this.grid[key]?.state === 'empty';
+            });
+
+            if (emptyCells.length === 1) {
+                const key = `${suspect.id}:${emptyCells[0].id}`;
+                this.grid[key] = { state: 'circle', isAutoFilled: true };
+                changed = true;
+            }
+        });
+
+        this.weapons.forEach(weapon => {
+            const emptyCells = this.locations.filter(location => {
+                const key = `${weapon.id}:${location.id}`;
+                return this.grid[key]?.state === 'empty';
+            });
+
+            if (emptyCells.length === 1) {
+                const key = `${weapon.id}:${emptyCells[0].id}`;
                 this.grid[key] = { state: 'circle', isAutoFilled: true };
                 changed = true;
             }
@@ -448,8 +511,8 @@ export function generateLogicPuzzle(
         while (iterations < maxIterations && hints.length < maxHints) {
             iterations++;
 
-            // Test if puzzle is solvable with current hints
-            const solver = new PuzzleSolver(suspects, weapons, locations, hints, solution);
+            // CRITICAL: Test solver WITHOUT solution data (solver must deduce from hints alone)
+            const solver = new PuzzleSolver(suspects, weapons, locations, hints);
 
             if (solver.isSolved()) {
                 console.log('[Hint Generator] Puzzle solved! Total hints:', hints.length);
@@ -480,7 +543,7 @@ export function generateLogicPuzzle(
                     isStrikethrough: false
                 }];
 
-                const testSolver = new PuzzleSolver(suspects, weapons, locations, testHints, solution);
+                const testSolver = new PuzzleSolver(suspects, weapons, locations, testHints);
                 const newUnsolvedCells = testSolver.getUnsolvedCells();
 
                 // If this hint reduces unsolved cells, add it
@@ -505,18 +568,31 @@ export function generateLogicPuzzle(
         return hints;
     }
 
-    // Step 4: Remove redundant hints
+    // Step 4: Remove redundant hints (TEMPORARILY DISABLED for debugging)
     function removeRedundantHints(hints: Hint[]): Hint[] {
+        console.log('[Hint Generator] Redundancy check DISABLED - returning all hints');
+        // Disabled to prevent over-deletion during initial testing
+        // Will re-enable after confirming hint generation works correctly
+        return hints;
+
+        /* ORIGINAL CODE - DISABLED
         console.log('[Hint Generator] Checking for redundant hints...');
         const necessaryHints: Hint[] = [];
+        const minHints = suspects.length; // Safety: never go below grid size
 
         for (let i = 0; i < hints.length; i++) {
+            // Skip if we're already at minimum
+            if (necessaryHints.length >= minHints && hints.length - necessaryHints.length <= 1) {
+                necessaryHints.push(hints[i]);
+                continue;
+            }
+
             // Create hint list without hint i
             const testHints = hints.filter((_, index) => index !== i);
-
+            
             // Test if puzzle is still solvable without this hint
-            const solver = new PuzzleSolver(suspects, weapons, locations, testHints, solution);
-
+            const solver = new PuzzleSolver(suspects, weapons, locations, testHints);
+            
             if (!solver.isSolved()) {
                 // This hint is necessary
                 necessaryHints.push(hints[i]);
@@ -527,6 +603,7 @@ export function generateLogicPuzzle(
 
         console.log(`[Hint Generator] Reduced from ${hints.length} to ${necessaryHints.length} hints`);
         return necessaryHints;
+        */
     }
 
     // Generate hints
