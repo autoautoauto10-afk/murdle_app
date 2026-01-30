@@ -485,15 +485,37 @@ export function generateLogicPuzzle(
 
     console.log(`[Phase 1] Generated ${negativeHints.length} negative hint candidates`);
 
-    // Shuffle hint pool
-    const shuffledPool = shuffle(hintPool);
-    console.log(`[Phase 1] Generated ${shuffledPool.length} hint candidates`);
+    // Shuffle both pools
+    const shuffledPositive = shuffle(positiveHints);
+    const shuffledNegative = shuffle(negativeHints);
 
-    // Add hints one by one until solvable
+    // PRIORITY: Start with 2-3 positive hints
     const generatedHints: Hint[] = [];
     let hintId = 1;
+    const initialPositiveCount = suspects.length === 3 ? 2 : 3;
 
-    for (const hintText of shuffledPool) {
+    console.log(`[Phase 1] Adding ${initialPositiveCount} positive hints first (priority)...`);
+
+    for (let i = 0; i < initialPositiveCount && i < shuffledPositive.length; i++) {
+        generatedHints.push({
+            id: `h${hintId++}`,
+            text: shuffledPositive[i],
+            isStrikethrough: false
+        });
+        console.log(`  [${generatedHints.length}] ✓ ${shuffledPositive[i]}`);
+    }
+
+    // Remove used positive hints from pool
+    const remainingPositive = shuffledPositive.slice(initialPositiveCount);
+
+    // Merge remaining hints and shuffle
+    const remainingHints = shuffle([...remainingPositive, ...shuffledNegative]);
+    console.log(`[Phase 1] Remaining hint pool: ${remainingHints.length} hints`);
+
+    // Add hints until solvable
+    console.log(`[Phase 1] Adding hints until puzzle is solvable...`);
+
+    for (const hintText of remainingHints) {
         generatedHints.push({
             id: `h${hintId++}`,
             text: hintText,
