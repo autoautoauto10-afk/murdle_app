@@ -110,15 +110,15 @@ export default function Home() {
 
       if (gridType === 'suspectWeapon') {
         // Find other circles in this grid and mark their auto-crosses for preservation
-        for (const suspect of puzzle.suspects) {
-          for (const weapon of puzzle.weapons) {
+        for (const suspect of puzzle.suspects as Entity[]) {
+          for (const weapon of puzzle.weapons as Entity[]) {
             const k = `${suspect.id}:${weapon.id}`;
             if (k !== key && newGridState.suspectWeapon[k]?.state === 'circle') {
               // This circle should preserve crosses in its row and column
-              puzzle.weapons.forEach(w => {
+              puzzle.weapons.forEach((w: Entity) => {
                 if (w.id !== weapon.id) cellsToPreserve.add(`${suspect.id}:${w.id}`);
               });
-              puzzle.suspects.forEach(s => {
+              puzzle.suspects.forEach((s: Entity) => {
                 if (s.id !== suspect.id) cellsToPreserve.add(`${s.id}:${weapon.id}`);
               });
             }
@@ -144,14 +144,14 @@ export default function Home() {
         });
       } else if (gridType === 'suspectLocation') {
         // Find other circles and mark their auto-crosses for preservation
-        for (const suspect of puzzle.suspects) {
-          for (const location of puzzle.locations) {
+        for (const suspect of puzzle.suspects as Entity[]) {
+          for (const location of puzzle.locations as Entity[]) {
             const k = `${suspect.id}:${location.id}`;
             if (k !== key && newGridState.suspectLocation[k]?.state === 'circle') {
-              puzzle.locations.forEach(l => {
+              puzzle.locations.forEach((l: Entity) => {
                 if (l.id !== location.id) cellsToPreserve.add(`${suspect.id}:${l.id}`);
               });
-              puzzle.suspects.forEach(s => {
+              puzzle.suspects.forEach((s: Entity) => {
                 if (s.id !== suspect.id) cellsToPreserve.add(`${s.id}:${location.id}`);
               });
             }
@@ -176,14 +176,14 @@ export default function Home() {
         });
       } else if (gridType === 'weaponLocation') {
         // Find other circles and mark their auto-crosses for preservation
-        for (const weapon of puzzle.weapons) {
-          for (const location of puzzle.locations) {
+        for (const weapon of puzzle.weapons as Entity[]) {
+          for (const location of puzzle.locations as Entity[]) {
             const k = `${weapon.id}:${location.id}`;
             if (k !== key && newGridState.weaponLocation[k]?.state === 'circle') {
-              puzzle.locations.forEach(l => {
+              puzzle.locations.forEach((l: Entity) => {
                 if (l.id !== location.id) cellsToPreserve.add(`${weapon.id}:${l.id}`);
               });
-              puzzle.weapons.forEach(w => {
+              puzzle.weapons.forEach((w: Entity) => {
                 if (w.id !== weapon.id) cellsToPreserve.add(`${w.id}:${location.id}`);
               });
             }
