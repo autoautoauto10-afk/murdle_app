@@ -504,6 +504,8 @@ export function generateLogicPuzzle(
     let lastUnsolvedCount = countUnsolvedCells([]);
     let hintId = 1;
 
+    const maxHints = suspects.length * 3; // Safety limit
+
     console.log(`[Generator] Max hints: ${maxHints}`);
     console.log(`[Generator] Initial unsolved cells: ${lastUnsolvedCount}`);
 
