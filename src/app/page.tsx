@@ -272,9 +272,20 @@ export default function Home() {
         <div className="lg:col-span-4">
           <Clues hints={hints} onToggleHint={toggleHint} />
 
-          <div className="mt-8 bg-amber-50 border-l-4 border-amber-400 p-4 text-sm italic font-serif">
+          <div className="mt-8 bg-amber-50 border-l-4 border-amber-400 p-4 text-sm italic font-serif mb-8">
             「すべてのヒントが重要です、探偵。矛盾を見つけてください。」
           </div>
+
+          {puzzle.identityClue && (
+            <div className="mt-8 bg-red-50 border-4 border-red-600 p-4 rounded-lg shadow-md animate-pulse">
+              <h3 className="text-red-700 font-bold flex items-center gap-2 mb-2">
+                <span className="text-xl">🚨</span> 最重要証言（犯人の特定）
+              </h3>
+              <p className="text-red-900 font-bold text-lg">
+                {puzzle.identityClue}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Multi-Grid */}
