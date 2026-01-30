@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Entity, MultiGridState } from '@/types/game';
+import React, { useMemo } from 'react';
+import { Entity, MultiGridState, GridState } from '@/types/game';
 import Grid from './Grid';
 
 interface MultiGridProps {
@@ -13,11 +13,33 @@ interface MultiGridProps {
 }
 
 export default function MultiGrid({ suspects, weapons, locations, gridState, onCellClick }: MultiGridProps) {
+
+    // UI表示用に、下段グリッド（凶器×場所）のデータを「場所×凶器」に転置（Transpose）する
+    // これにより、上段左のグリッド（容疑者×凶器）と、下段のグリッドの「凶器」列（縦ライン）が揃います。
+    const transposedWeaponLocationState = useMemo(() => {
+        const transposed: GridState = {};
+
+        // 場所IDを行キー (Category1)、凶器IDを列キー (Category2) にする構造へ変換
+        locations.forEach(loc => {
+            weapons.forEach(weap => {
+                // 元のデータ構造は Flat Map "WeaponID:LocationID"
+                const originalKey = `${weap.id}:${loc.id}`;
+                // 新しいキーは "LocationID:WeaponID" (Category1:Location, Category2:Weapon)
+                const newKey = `${loc.id}:${weap.id}`;
+
+                const cellMark = gridState.weaponLocation[originalKey];
+                if (cellMark) {
+                    transposed[newKey] = cellMark;
+                }
+            });
+        });
+        return transposed;
+    }, [gridState.weaponLocation, weapons, locations]);
+
     return (
         <div className="overflow-x-auto pb-4">
-            {/* L-shaped unified grid layout */}
             <div className="inline-block">
-                {/* Top row: Suspect vs Weapon | Suspect vs Location */}
+                {/* 上段: 容疑者 vs 凶器 | 容疑者 vs 場所 */}
                 <div className="flex">
                     <Grid
                         category1={suspects}
@@ -38,16 +60,18 @@ export default function MultiGrid({ suspects, weapons, locations, gridState, onC
                     />
                 </div>
 
-                {/* Bottom row: Weapon vs Location (aligned with weapons column) */}
+                {/* 下段: 場所 vs 凶器 （データを転置して表示） */}
+                {/* category1を場所(行)、category2を凶器(列)に設定することで、上のグリッドと列が揃う */}
                 <div className="flex">
                     <Grid
-                        category1={weapons}
-                        category2={locations}
-                        gridState={gridState.weaponLocation}
-                        onCellClick={(id1, id2) => onCellClick('weaponLocation', id1, id2)}
-                        label="凶器 × 場所"
+                        category1={locations}
+                        category2={weapons}
+                        gridState={transposedWeaponLocationState} // 転置したStateを使用
+                        // クリックイベントは元のデータ構造 (凶器ID, 場所ID) に戻して親に渡す
+                        onCellClick={(locId, weapId) => onCellClick('weaponLocation', weapId, locId)}
+                        label="場所 × 凶器"
                         compact={true}
-                        hideColumnHeaders={true}
+                        hideColumnHeaders={true} // 上のグリッドのヘッダーと列が揃うため、ヘッダーは隠す
                     />
                 </div>
             </div>
