@@ -213,7 +213,7 @@ class PuzzleSolver {
                 this.locations.forEach(location => {
                     if (location.id !== circleLocation.id) {
                         const key = `${weapon.id}:${location.id}`;
-                        if (this.grid[query]?.state === 'empty') {
+                        if (this.grid[key]?.state === 'empty') {
                             this.grid[key] = { state: 'cross', isAutoFilled: true };
                             changed = true;
                         }
