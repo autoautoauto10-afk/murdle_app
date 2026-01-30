@@ -327,6 +327,35 @@ class PuzzleSolver {
     }
 }
 
+// Canonical Key Helper: Ensures consistent ID ordering
+// Priority: Suspect > Weapon > Location
+function getCanonicalKey(
+    id1: string,
+    id2: string,
+    categories: { suspects: Entity[], weapons: Entity[], locations: Entity[] }
+): string {
+    const isSuspect = (id: string) => categories.suspects.some(s => s.id === id);
+    const isWeapon = (id: string) => categories.weapons.some(w => w.id === id);
+    const isLocation = (id: string) => categories.locations.some(l => l.id === id);
+
+    let key = "";
+
+    // Determine category and order correctly
+    if (isSuspect(id1)) {
+        if (isWeapon(id2)) key = `${id1}:${id2}`;       // Suspect:Weapon
+        else if (isLocation(id2)) key = `${id1}:${id2}`; // Suspect:Location
+    } else if (isWeapon(id1)) {
+        if (isSuspect(id2)) key = `${id2}:${id1}`;       // Suspect:Weapon (Swap!)
+        else if (isLocation(id2)) key = `${id1}:${id2}`; // Weapon:Location
+    } else if (isLocation(id1)) {
+        if (isSuspect(id2)) key = `${id2}:${id1}`;       // Suspect:Location (Swap!)
+        else if (isWeapon(id2)) key = `${id2}:${id1}`;   // Weapon:Location (Swap!)
+    }
+
+    // Guard: if unable to determine, return as-is (should not happen)
+    return key || `${id1}:${id2}`;
+}
+
 export function generateLogicPuzzle(
     suspects: Entity[],
     weapons: Entity[],
@@ -475,14 +504,33 @@ export function generateLogicPuzzle(
     let lastUnsolvedCount = countUnsolvedCells([]);
     let hintId = 1;
 
-    const targetHintCount = suspects.length === 3 ? 5 : 9; // Target: 5 for 3x3, 9 for 4x4
-    const maxHints = suspects.length * 3; // Safety limit
-
-    console.log(`[Generator] Target hint count: ${targetHintCount}, Max: ${maxHints}`);
+    console.log(`[Generator] Max hints: ${maxHints}`);
     console.log(`[Generator] Initial unsolved cells: ${lastUnsolvedCount}`);
 
+    let skippedCount = 0;
+
     for (const candidate of shuffledCandidates) {
-        // Try adding this hint
+        // STEP 1: Get current grid state from already selected hints
+        const tempSolver = new PuzzleSolver(suspects, weapons, locations, selectedHints);
+        tempSolver.solve();
+        const currentGrid = tempSolver.getGridState();
+
+        // STEP 2: Normalize key to match solver's grid structure
+        const key = getCanonicalKey(
+            candidate.entity1Id,
+            candidate.entity2Id,
+            { suspects, weapons, locations }
+        );
+        const cellState = currentGrid[key]?.state;
+
+        // STEP 3: Strict redundancy check - skip if already determined
+        if (cellState === 'circle' || cellState === 'cross') {
+            skippedCount++;
+            console.log(`[Skipped] "${candidate.text}" (Cell ${key} is already ${cellState})`);
+            continue; // Skip redundant hint
+        }
+
+        // STEP 4: Test if adding this hint makes progress
         const testHints = [...selectedHints, {
             id: `h${hintId}`,
             text: candidate.text,
@@ -492,8 +540,8 @@ export function generateLogicPuzzle(
         const newUnsolvedCount = countUnsolvedCells(testHints);
         const progress = lastUnsolvedCount - newUnsolvedCount;
 
-        // Add hint if it makes progress OR if we need more hints to reach target
-        const shouldAdd = progress > 0 || (selectedHints.length < targetHintCount && newUnsolvedCount > 0);
+        // STEP 5: Add hint ONLY if it makes progress (no target padding)
+        const shouldAdd = progress > 0;
 
         if (shouldAdd) {
             selectedHints.push({
@@ -522,6 +570,8 @@ export function generateLogicPuzzle(
             }
         }
     }
+
+    console.log(`[Generator] Skipped ${skippedCount} redundant hints`);
 
     // Final verification
     const finalSolver = new PuzzleSolver(suspects, weapons, locations, selectedHints);
