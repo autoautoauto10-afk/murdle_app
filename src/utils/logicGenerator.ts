@@ -327,6 +327,145 @@ class PuzzleSolver {
     }
 }
 
+// DOMINATION CHECK: Remove negative hints implied by positive hints
+function filterImpliedNegatives(
+    hints: Hint[],
+    suspects: Entity[],
+    weapons: Entity[],
+    locations: Entity[]
+): Hint[] {
+    console.log('[Domination] Filtering implied negative hints...');
+    console.log(`[Domination] Initial hint count: ${hints.length}`);
+
+    // Extract all positive hints and parse them
+    const positiveInfo: Array<{
+        suspectId?: string;
+        weaponId?: string;
+        locationId?: string;
+        type: 'suspect-weapon' | 'weapon-location' | 'suspect-location';
+    }> = [];
+
+    hints.forEach(hint => {
+        const text = hint.text.replace('🚨 ', '');
+
+        // "AはBを使った" (suspect-weapon)
+        const swMatch = text.match(/(.+)は(.+)を使った/);
+        if (swMatch) {
+            const suspect = suspects.find(s => s.name === swMatch[1]);
+            const weapon = weapons.find(w => w.name === swMatch[2]);
+            if (suspect && weapon) {
+                positiveInfo.push({
+                    suspectId: suspect.id,
+                    weaponId: weapon.id,
+                    type: 'suspect-weapon'
+                });
+            }
+        }
+
+        // "AはBで発見された" (weapon-location)
+        const wlMatch = text.match(/(.+)は(.+)で発見された/);
+        if (wlMatch) {
+            const weapon = weapons.find(w => w.name === wlMatch[1]);
+            const location = locations.find(l => l.name === wlMatch[2]);
+            if (weapon && location) {
+                positiveInfo.push({
+                    weaponId: weapon.id,
+                    locationId: location.id,
+                    type: 'weapon-location'
+                });
+            }
+        }
+
+        // "AはBにいた" (suspect-location)
+        const slMatch = text.match(/(.+)は(.+)にいた/);
+        if (slMatch) {
+            const suspect = suspects.find(s => s.name === slMatch[1]);
+            const location = locations.find(l => l.name === slMatch[2]);
+            if (suspect && location) {
+                positiveInfo.push({
+                    suspectId: suspect.id,
+                    locationId: location.id,
+                    type: 'suspect-location'
+                });
+            }
+        }
+    });
+
+    console.log(`[Domination] Found ${positiveInfo.length} positive facts`);
+
+    // Filter out negative hints that are implied
+    let removedCount = 0;
+    const filteredHints = hints.filter(hint => {
+        const text = hint.text.replace('🚨 ', '');
+
+        // Check negative patterns
+        // "AはBを使っていない" (suspect-weapon negative)
+        const swNegMatch = text.match(/(.+)は(.+)を使っていない/);
+        if (swNegMatch) {
+            const suspect = suspects.find(s => s.name === swNegMatch[1]);
+            const weapon = weapons.find(w => w.name === swNegMatch[2]);
+            if (suspect && weapon) {
+                // Check if we know suspect's actual weapon
+                const impliedByPositive = positiveInfo.some(info =>
+                    info.type === 'suspect-weapon' &&
+                    info.suspectId === suspect.id &&
+                    info.weaponId !== weapon.id
+                );
+                if (impliedByPositive) {
+                    removedCount++;
+                    console.log(`[Domination] ✗ Removed: "${text}" (implied by positive)`);
+                    return false;
+                }
+            }
+        }
+
+        // "AはBにいなかった" (suspect-location negative)
+        const slNegMatch = text.match(/(.+)は(.+)にいなかった/);
+        if (slNegMatch) {
+            const suspect = suspects.find(s => s.name === slNegMatch[1]);
+            const location = locations.find(l => l.name === slNegMatch[2]);
+            if (suspect && location) {
+                const impliedByPositive = positiveInfo.some(info =>
+                    info.type === 'suspect-location' &&
+                    info.suspectId === suspect.id &&
+                    info.locationId !== location.id
+                );
+                if (impliedByPositive) {
+                    removedCount++;
+                    console.log(`[Domination] ✗ Removed: "${text}" (implied by positive)`);
+                    return false;
+                }
+            }
+        }
+
+        // "AはBでは使われなかった" (weapon-location negative)
+        const wlNegMatch = text.match(/(.+)は(.+)では使われなかった/);
+        if (wlNegMatch) {
+            const weapon = weapons.find(w => w.name === wlNegMatch[1]);
+            const location = locations.find(l => l.name === wlNegMatch[2]);
+            if (weapon && location) {
+                const impliedByPositive = positiveInfo.some(info =>
+                    info.type === 'weapon-location' &&
+                    info.weaponId === weapon.id &&
+                    info.locationId !== location.id
+                );
+                if (impliedByPositive) {
+                    removedCount++;
+                    console.log(`[Domination] ✗ Removed: "${text}" (implied by positive)`);
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    });
+
+    console.log(`[Domination] Removed ${removedCount} implied negative hints`);
+    console.log(`[Domination] Remaining hints: ${filteredHints.length}`);
+
+    return filteredHints;
+}
+
 // PHASE 2: Remove redundant hints
 function removeRedundantHints(
     hints: Hint[],
