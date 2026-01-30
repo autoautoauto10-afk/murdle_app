@@ -41,5 +41,6 @@ export type PuzzleData = {
     weaponId: string;
     locationId: string;
   };
+  identityClue: string;
   hints: Hint[];
 };
