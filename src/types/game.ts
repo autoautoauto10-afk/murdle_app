@@ -42,7 +42,5 @@ export type PuzzleData = {
     weaponId: string;
     locationId: string;
   };
-  identityClue: string;
-  finalClue?: string; // Add this for compatibility check
   hints: Hint[];
 };

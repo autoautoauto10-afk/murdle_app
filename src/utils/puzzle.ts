@@ -38,11 +38,11 @@ export function generateDailyPuzzle(seed: string): PuzzleData {
         selectedSuspects,
         selectedWeapons,
         selectedLocations,
-        seed
+        seedNumber
     );
 
     return {
-        date,
+        date: seed,
         suspects: selectedSuspects,
         weapons: selectedWeapons,
         locations: selectedLocations,
