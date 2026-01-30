@@ -29,6 +29,7 @@ export type Hint = {
   id: string;
   text: string;
   isStrikethrough: boolean;
+  type?: 'normal' | 'identity';
 };
 
 export type PuzzleData = {

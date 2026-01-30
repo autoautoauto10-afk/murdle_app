@@ -19,7 +19,9 @@ export default function Clues({ hints, onToggleHint }: CluesProps) {
                         onClick={() => onToggleHint(hint.id)}
                         className={`cursor-pointer transition-all ${hint.isStrikethrough
                             ? 'text-stone-400 line-through decoration-stone-500'
-                            : 'text-stone-800 hover:text-stone-600'
+                            : hint.type === 'identity'
+                                ? 'text-red-600 font-bold hover:text-red-700'
+                                : 'text-stone-800 hover:text-stone-600'
                             }`}
                     >
                         <span className="inline-block w-4 mr-2 text-stone-400">•</span>

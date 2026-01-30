@@ -54,7 +54,7 @@ export function generateLogicPuzzle(
     weapons: Entity[],
     locations: Entity[],
     seed: number
-): { solution: { suspectId: string; weaponId: string; locationId: string }; hints: Hint[]; identityClue: string } {
+): { solution: { suspectId: string; weaponId: string; locationId: string }; hints: Hint[] } {
 
     const random = mulberry32(seed);
 
@@ -141,13 +141,21 @@ export function generateLogicPuzzle(
     // Step 3: Generate identity clue (The Final Clue)
     // 50% chance for weapon, 50% chance for location
     const identityClueType = random() > 0.5 ? 'weapon' : 'location';
-    let identityClue = '';
+    let identityClueText = '';
 
     if (identityClueType === 'weapon') {
-        identityClue = `犯人は${shuffledWeapons[0].name}を使用した痕跡がある。`;
+        identityClueText = `犯人は${shuffledWeapons[0].name}を使用した痕跡がある。`;
     } else {
-        identityClue = `犯人は${shuffledLocations[0].name}にいた形跡がある。`;
+        identityClueText = `犯人は${shuffledLocations[0].name}にいた形跡がある。`;
     }
+
+    // Add identity clue to hints list
+    hints.push({
+        id: `h${hintId++}`,
+        text: `🚨 ${identityClueText}`, // Add emoji for visual distinction in text as well
+        isStrikethrough: false,
+        type: 'identity'
+    });
 
     // Step 4: Verify solvability (simplified for now)
     const solver = new PuzzleSolver(suspects, weapons, locations, hints);
@@ -156,7 +164,7 @@ export function generateLogicPuzzle(
     // In a full implementation, we'd regenerate if solver fails
     // For now, we trust our hint generation
 
-    return { solution, hints, identityClue };
+    return { solution, hints };
 }
 
 // Seedable random number generator
