@@ -320,7 +320,7 @@ export default function Home() {
   if (!puzzle) return <div className="min-h-screen bg-stone-100 flex items-center justify-center font-mono">事件ファイルを読み込み中...</div>;
 
   return (
-    <main className="min-h-screen bg-stone-100 text-stone-900 font-sans p-4 md:p-8">
+    <main key={puzzleSeed} className="min-h-screen bg-stone-100 text-stone-900 font-sans p-4 md:p-8">
       {/* Header */}
       <header className="max-w-6xl mx-auto flex justify-between items-center mb-12 border-b-4 border-stone-800 pb-4">
         <div>
