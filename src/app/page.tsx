@@ -20,8 +20,12 @@ export default function Home() {
   const [gameResult, setGameResult] = useState<'playing' | 'won' | 'lost'>('playing');
 
   useEffect(() => {
+    console.log('=== Puzzle Generation ===');
+    console.log('Current Seed String:', puzzleSeed);
     const generated = generateDailyPuzzle(puzzleSeed);
-    console.log('Puzzle Data:', generated); // Debug log
+    console.log('Generated Puzzle:');
+    console.log('  - Solution:', generated.solution);
+    console.log('  - Identity Clue:', generated.hints.find(h => h.type === 'identity')?.text);
     setPuzzle(generated);
     setHints(generated.hints);
   }, [puzzleSeed]);
