@@ -36,11 +36,11 @@ export default function Grid({
                 {!hideColumnHeaders && (
                     <thead>
                         <tr>
-                            {!hideRowHeaders && <th className="w-20 h-12 border-2 border-stone-800 bg-stone-100"></th>}
+                            {!hideRowHeaders && <th className="w-16 h-16 border-2 border-stone-800 bg-stone-100"></th>}
                             {category2.map((item) => (
                                 <th
                                     key={item.id}
-                                    className="w-20 h-12 border-2 border-stone-800 bg-stone-200 text-xs font-bold p-1 align-middle text-center"
+                                    className="w-16 h-16 border-2 border-stone-800 bg-stone-200 text-xs font-bold p-1 align-middle text-center"
                                 >
                                     <div className="whitespace-normal break-words leading-tight text-[10px]">{item.name}</div>
                                 </th>
@@ -52,7 +52,7 @@ export default function Grid({
                     {category1.map((row) => (
                         <tr key={row.id}>
                             {!hideRowHeaders && (
-                                <th className="w-20 h-12 border-2 border-stone-800 bg-stone-300 text-xs font-bold p-1 whitespace-normal break-words leading-tight text-center">
+                                <th className="w-16 h-16 border-2 border-stone-800 bg-stone-300 text-xs font-bold p-1 whitespace-normal break-words leading-tight text-center">
                                     {row.name}
                                 </th>
                             )}
@@ -64,22 +64,22 @@ export default function Grid({
                                 return (
                                     <td
                                         key={col.id}
-                                        className="w-20 h-12 border-2 border-stone-800 bg-stone-50 hover:bg-stone-200 cursor-pointer transition-colors relative"
+                                        className="w-16 h-16 border-2 border-stone-800 bg-stone-50 hover:bg-stone-200 cursor-pointer transition-colors relative"
                                         onClick={() => onCellClick(row.id, col.id)}
                                     >
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             {state === 'circle' && (
                                                 <div className="relative">
                                                     <div className="absolute inset-0 flex items-center justify-center">
-                                                        <div className="w-3 h-3 bg-stone-900 rounded-full"></div>
+                                                        <div className="w-3 h-3 bg-green-600 rounded-full"></div>
                                                     </div>
                                                     <div className="relative flex items-center justify-center">
-                                                        <div className="w-8 h-8 border-4 border-stone-900 rounded-full"></div>
+                                                        <div className="w-10 h-10 border-4 border-green-600 rounded-full"></div>
                                                     </div>
                                                 </div>
                                             )}
                                             {state === 'cross' && (
-                                                <X className="w-8 h-8 text-stone-900 stroke-[3px]" />
+                                                <X className={`w-10 h-10 ${isAutoFilled ? 'text-red-300' : 'text-red-600'} stroke-[3px]`} />
                                             )}
                                         </div>
                                     </td>
