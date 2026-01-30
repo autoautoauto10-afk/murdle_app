@@ -28,10 +28,29 @@ export function generateDailyPuzzle(seed: string): PuzzleData {
 
     console.log('[Puzzle Generator] Seed String:', seed, '-> Numeric Seed:', seedNumber);
 
-    // Use first 3 of each category for simplicity
-    const selectedSuspects = SUSPECTS.slice(0, 3);
-    const selectedWeapons = WEAPONS.slice(0, 3);
-    const selectedLocations = LOCATIONS.slice(0, 3);
+    // Seeded shuffle function using Fisher-Yates algorithm
+    function seededShuffle<T>(array: T[], seed: number): T[] {
+        const shuffled = [...array];
+        let currentSeed = seed;
+
+        // Simple LCG (Linear Congruential Generator) for deterministic randomness
+        const random = () => {
+            currentSeed = (currentSeed * 1103515245 + 12345) & 0x7fffffff;
+            return currentSeed / 0x7fffffff;
+        };
+
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
+        return shuffled;
+    }
+
+    // Randomly select 4 items from each pool (from 10 total)
+    const selectedSuspects = seededShuffle(SUSPECTS, seedNumber).slice(0, 4);
+    const selectedWeapons = seededShuffle(WEAPONS, seedNumber + 1000).slice(0, 4);
+    const selectedLocations = seededShuffle(LOCATIONS, seedNumber + 2000).slice(0, 4);
 
     // Generate puzzle with solver validation
     const { solution, hints } = generateLogicPuzzle(
