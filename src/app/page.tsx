@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { generateDailyPuzzle } from '@/utils/puzzle';
 import { PuzzleData, MultiGridState, CellMark, Hint, Entity } from '@/types/game';
-import MultiGrid from '@/components/features/MultiGrid';
+import UnifiedGrid from '@/components/features/UnifiedGrid';
 import Clues from '@/components/features/Clues';
 import FinalAnswer from '@/components/features/FinalAnswer';
 import { Search, Settings, Share2 } from 'lucide-react';
@@ -371,7 +371,7 @@ export default function Home() {
         {/* Right Column: Multi-Grid */}
         <div className="lg:col-span-8">
           <h2 className="text-xl font-serif font-bold mb-6">証拠グリッド</h2>
-          <MultiGrid
+          <UnifiedGrid
             suspects={puzzle.suspects}
             weapons={puzzle.weapons}
             locations={puzzle.locations}
