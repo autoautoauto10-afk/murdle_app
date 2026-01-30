@@ -332,7 +332,9 @@ export default function Home() {
             <Search className="w-8 h-8" />
             探偵ロジック
           </h1>
-          <p className="text-xs font-bold font-mono text-stone-500">{puzzle.date} // 事件 #402</p>
+          <p className="text-xs font-bold font-mono text-stone-500">
+            {puzzle.date} // 事件 #402 // 難易度: {puzzle.difficulty} ({puzzle.gridSize}x{puzzle.gridSize})
+          </p>
         </div>
         <div className="flex gap-4">
           <button

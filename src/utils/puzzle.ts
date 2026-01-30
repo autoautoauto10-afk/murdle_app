@@ -28,6 +28,14 @@ export function generateDailyPuzzle(seed: string): PuzzleData {
 
     console.log('[Puzzle Generator] Seed String:', seed, '-> Numeric Seed:', seedNumber);
 
+    // Determine grid size (difficulty) based on seed
+    // 50% chance for 3 (EASY), 50% chance for 4 (NORMAL)
+    const sizeRng = (seedNumber * 9301 + 49297) % 233280 / 233280;
+    const gridSize = sizeRng > 0.5 ? 4 : 3;
+    const difficulty = gridSize === 3 ? 'EASY' : 'NORMAL';
+
+    console.log('[Puzzle Generator] Grid Size:', gridSize, 'Difficulty:', difficulty);
+
     // Seeded shuffle function using Fisher-Yates algorithm
     function seededShuffle<T>(array: T[], seed: number): T[] {
         const shuffled = [...array];
@@ -47,10 +55,10 @@ export function generateDailyPuzzle(seed: string): PuzzleData {
         return shuffled;
     }
 
-    // Randomly select 4 items from each pool (from 10 total)
-    const selectedSuspects = seededShuffle(SUSPECTS, seedNumber).slice(0, 4);
-    const selectedWeapons = seededShuffle(WEAPONS, seedNumber + 1000).slice(0, 4);
-    const selectedLocations = seededShuffle(LOCATIONS, seedNumber + 2000).slice(0, 4);
+    // Randomly select gridSize items from each pool (from 10 total)
+    const selectedSuspects = seededShuffle(SUSPECTS, seedNumber).slice(0, gridSize);
+    const selectedWeapons = seededShuffle(WEAPONS, seedNumber + 1000).slice(0, gridSize);
+    const selectedLocations = seededShuffle(LOCATIONS, seedNumber + 2000).slice(0, gridSize);
 
     // Generate puzzle with solver validation
     const { solution, hints } = generateLogicPuzzle(
@@ -62,6 +70,8 @@ export function generateDailyPuzzle(seed: string): PuzzleData {
 
     return {
         date: seed,
+        difficulty,
+        gridSize,
         suspects: selectedSuspects,
         weapons: selectedWeapons,
         locations: selectedLocations,

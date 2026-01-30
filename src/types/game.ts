@@ -34,6 +34,8 @@ export type Hint = {
 
 export type PuzzleData = {
   date: string;
+  difficulty: 'EASY' | 'NORMAL';
+  gridSize: number;
   suspects: Entity[];
   weapons: Entity[];
   locations: Entity[];
