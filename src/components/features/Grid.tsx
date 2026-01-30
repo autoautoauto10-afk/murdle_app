@@ -32,52 +32,54 @@ export default function Grid({
     return (
         <div className={compact ? '' : 'mb-8'}>
             {label && !compact && <h3 className="text-sm font-bold mb-2 text-stone-600">{label}</h3>}
-            <table className="border-collapse" style={{ borderSpacing: 0 }}>
+            <table className="border-collapse table-fixed" style={{ borderSpacing: 0 }}>
                 {!hideColumnHeaders && (
                     <thead>
                         <tr>
-                            {!hideRowHeaders && <th className={`${cellSize} border-2 border-stone-800 bg-stone-100`}></th>}
+                            {!hideRowHeaders && <th className="w-20 h-12 border-2 border-stone-800 bg-stone-100"></th>}
                             {category2.map((item) => (
                                 <th
                                     key={item.id}
-                                    className={`${cellSize} border-2 border-stone-800 bg-stone-200 text-xs font-bold p-1 align-middle text-center`}
+                                    className="w-20 h-12 border-2 border-stone-800 bg-stone-200 text-xs font-bold p-1 align-middle text-center"
                                 >
-                                    <div className="rotate-[-45deg] whitespace-nowrap text-[10px]">{item.name}</div>
+                                    <div className="whitespace-normal break-words leading-tight text-[10px]">{item.name}</div>
                                 </th>
                             ))}
                         </tr>
                     </thead>
                 )}
                 <tbody>
-                    {category1.map((item1) => (
-                        <tr key={item1.id}>
+                    {category1.map((row) => (
+                        <tr key={row.id}>
                             {!hideRowHeaders && (
-                                <th className={`${cellSize} border-2 border-stone-800 bg-stone-200 text-xs font-bold p-1 text-left`}>
-                                    <div className="text-[10px]">{item1.name}</div>
+                                <th className="w-20 h-12 border-2 border-stone-800 bg-stone-300 text-xs font-bold p-1 whitespace-normal break-words leading-tight text-center">
+                                    {row.name}
                                 </th>
                             )}
-                            {category2.map((item2) => {
-                                const key = `${item1.id}:${item2.id}`;
+                            {category2.map((col) => {
+                                const key = `${row.id}:${col.id}`;
                                 const cellMark: CellMark = gridState[key] || { state: 'empty', isAutoFilled: false };
                                 const { state, isAutoFilled } = cellMark;
 
                                 return (
                                     <td
-                                        key={item2.id}
-                                        onClick={() => onCellClick(item1.id, item2.id)}
-                                        className={`${cellSize} border-2 border-stone-800 bg-white cursor-pointer hover:bg-stone-50 transition-colors relative`}
+                                        key={col.id}
+                                        className="w-20 h-12 border-2 border-stone-800 bg-stone-50 hover:bg-stone-200 cursor-pointer transition-colors relative"
+                                        onClick={() => onCellClick(row.id, col.id)}
                                     >
-                                        <div className="flex items-center justify-center w-full h-full">
+                                        <div className="absolute inset-0 flex items-center justify-center">
                                             {state === 'circle' && (
-                                                <div className={`${iconSize} rounded-full border-4 border-green-600 flex items-center justify-center`}>
-                                                    <div className={`${circleSize} rounded-full bg-green-600`}></div>
+                                                <div className="relative">
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <div className="w-3 h-3 bg-stone-900 rounded-full"></div>
+                                                    </div>
+                                                    <div className="relative flex items-center justify-center">
+                                                        <div className="w-8 h-8 border-4 border-stone-900 rounded-full"></div>
+                                                    </div>
                                                 </div>
                                             )}
                                             {state === 'cross' && (
-                                                <X
-                                                    className={`${iconSize} ${isAutoFilled ? 'text-red-300' : 'text-red-600'}`}
-                                                    strokeWidth={3}
-                                                />
+                                                <X className="w-8 h-8 text-stone-900 stroke-[3px]" />
                                             )}
                                         </div>
                                     </td>
