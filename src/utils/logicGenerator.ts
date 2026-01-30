@@ -412,44 +412,78 @@ export function generateLogicPuzzle(
         location: culpritLocation.name
     });
 
-    // ===== PHASE 1: SIMPLE GENERATION (with possible redundancy) =====
-    console.log('[Phase 1] Generating hints until puzzle is solvable...');
+    // ===== STEP 1: BUILD FULL SCENARIO (all suspects with weapons & locations) =====
+    console.log('[Scenario] Building complete scenario for all suspects...');
 
-    // Build hint pool (all possible hints)
-    const hintPool: string[] = [];
+    // Create 1-to-1 mapping for all suspects
+    const fullScenario: Array<{ suspect: Entity, weapon: Entity, location: Entity }> = [];
 
-    // Positive hints
-    hintPool.push(`${culpritSuspect.name}は${culpritWeapon.name}を使った。`);
-    hintPool.push(`${culpritWeapon.name}は${culpritLocation.name}で発見された。`);
-    hintPool.push(`${culpritSuspect.name}は${culpritLocation.name}にいた。`);
+    for (let i = 0; i < shuffledSuspects.length; i++) {
+        fullScenario.push({
+            suspect: shuffledSuspects[i],
+            weapon: shuffledWeapons[i],
+            location: shuffledLocations[i]
+        });
+    }
 
-    // Negative hints
+    console.log('[Scenario] Full scenario:');
+    fullScenario.forEach(s => {
+        const isCulprit = s.suspect.id === solution.suspectId;
+        console.log(`  ${isCulprit ? '👉' : '  '} ${s.suspect.name} + ${s.weapon.name} @ ${s.location.name}`);
+    });
+
+    // ===== PHASE 1: GENERATION WITH POSITIVE HINT PRIORITY =====
+    console.log('[Phase 1] Generating hints with positive hint priority...');
+
+    // Build POSITIVE hint pool (from full scenario)
+    const positiveHints: string[] = [];
+
+    fullScenario.forEach(s => {
+        positiveHints.push(`${s.suspect.name}は${s.weapon.name}を使った。`);
+        positiveHints.push(`${s.weapon.name}は${s.location.name}で発見された。`);
+        positiveHints.push(`${s.suspect.name}は${s.location.name}にいた。`);
+    });
+
+    console.log(`[Phase 1] Generated ${positiveHints.length} positive hint candidates`);
+
+    // Build NEGATIVE hint pool
+    const negativeHints: string[] = [];
+
     suspects.forEach(suspect => {
         weapons.forEach(weapon => {
-            const isWrong = suspect.id !== solution.suspectId || weapon.id !== solution.weaponId;
+            // Check if this is a wrong combination in the full scenario
+            const isWrong = !fullScenario.some(s =>
+                s.suspect.id === suspect.id && s.weapon.id === weapon.id
+            );
             if (isWrong) {
-                hintPool.push(`${suspect.name}は${weapon.name}を使っていない。`);
+                negativeHints.push(`${suspect.name}は${weapon.name}を使っていない。`);
             }
         });
     });
 
     suspects.forEach(suspect => {
         locations.forEach(location => {
-            const isWrong = suspect.id !== solution.suspectId || location.id !== solution.locationId;
+            const isWrong = !fullScenario.some(s =>
+                s.suspect.id === suspect.id && s.location.id === location.id
+            );
             if (isWrong) {
-                hintPool.push(`${suspect.name}は${location.name}にいなかった。`);
+                negativeHints.push(`${suspect.name}は${location.name}にいなかった。`);
             }
         });
     });
 
     weapons.forEach(weapon => {
         locations.forEach(location => {
-            const isWrong = weapon.id !== solution.weaponId || location.id !== solution.locationId;
+            const isWrong = !fullScenario.some(s =>
+                s.weapon.id === weapon.id && s.location.id === location.id
+            );
             if (isWrong) {
-                hintPool.push(`${weapon.name}は${location.name}では使われなかった。`);
+                negativeHints.push(`${weapon.name}は${location.name}では使われなかった。`);
             }
         });
     });
+
+    console.log(`[Phase 1] Generated ${negativeHints.length} negative hint candidates`);
 
     // Shuffle hint pool
     const shuffledPool = shuffle(hintPool);
@@ -476,7 +510,7 @@ export function generateLogicPuzzle(
         }
 
         // Safety check
-        if (generatedHints.length >= shuffledPool.length) {
+        if (generatedHints.length >= remainingHints.length + initialPositiveCount) {
             console.warn('[Phase 1] ⚠️ Used all hints but puzzle not solved!');
             break;
         }
