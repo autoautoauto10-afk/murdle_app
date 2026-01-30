@@ -37,42 +37,44 @@ export default function MultiGrid({ suspects, weapons, locations, gridState, onC
     }, [gridState.weaponLocation, weapons, locations]);
 
     return (
-        <div className="overflow-x-auto pb-4">
-            <div className="inline-block">
-                {/* 上段: 容疑者 vs 凶器 | 容疑者 vs 場所 */}
-                <div className="flex">
-                    <Grid
-                        category1={suspects}
-                        category2={weapons}
-                        gridState={gridState.suspectWeapon}
-                        onCellClick={(id1, id2) => onCellClick('suspectWeapon', id1, id2)}
-                        label="容疑者 × 凶器"
-                        compact={true}
-                    />
-                    <Grid
-                        category1={suspects}
-                        category2={locations}
-                        gridState={gridState.suspectLocation}
-                        onCellClick={(id1, id2) => onCellClick('suspectLocation', id1, id2)}
-                        label="容疑者 × 場所"
-                        compact={true}
-                        hideRowHeaders={true}
-                    />
-                </div>
+        <div className="w-full max-w-4xl mx-auto px-4 py-2">
+            <div className="overflow-x-auto">
+                <div className="inline-block min-w-full">
+                    {/* 上段: 容疑者 vs 凶器 | 容疑者 vs 場所 */}
+                    <div className="flex gap-2 mb-2">
+                        <Grid
+                            category1={suspects}
+                            category2={weapons}
+                            gridState={gridState.suspectWeapon}
+                            onCellClick={(id1, id2) => onCellClick('suspectWeapon', id1, id2)}
+                            label="容疑者 × 凶器"
+                            compact={true}
+                        />
+                        <Grid
+                            category1={suspects}
+                            category2={locations}
+                            gridState={gridState.suspectLocation}
+                            onCellClick={(id1, id2) => onCellClick('suspectLocation', id1, id2)}
+                            label="容疑者 × 場所"
+                            compact={true}
+                            hideRowHeaders={true}
+                        />
+                    </div>
 
-                {/* 下段: 場所 vs 凶器 （データを転置して表示） */}
-                {/* category1を場所(行)、category2を凶器(列)に設定することで、上のグリッドと列が揃う */}
-                <div className="flex">
-                    <Grid
-                        category1={locations}
-                        category2={weapons}
-                        gridState={transposedWeaponLocationState} // 転置したStateを使用
-                        // クリックイベントは元のデータ構造 (凶器ID, 場所ID) に戻して親に渡す
-                        onCellClick={(locId, weapId) => onCellClick('weaponLocation', weapId, locId)}
-                        label="場所 × 凶器"
-                        compact={true}
-                        hideColumnHeaders={true} // 上のグリッドのヘッダーと列が揃うため、ヘッダーは隠す
-                    />
+                    {/* 下段: 場所 vs 凶器 （データを転置して表示） */}
+                    {/* category1を場所(行)、category2を凶器(列)に設定することで、上のグリッドと列が揃う */}
+                    <div className="flex">
+                        <Grid
+                            category1={locations}
+                            category2={weapons}
+                            gridState={transposedWeaponLocationState} // 転置したStateを使用
+                            // クリックイベントは元のデータ構造 (凶器ID, 場所ID) に戻して親に渡す
+                            onCellClick={(locId, weapId) => onCellClick('weaponLocation', weapId, locId)}
+                            label="場所 × 凶器"
+                            compact={true}
+                            hideColumnHeaders={true} // 上のグリッドのヘッダーと列が揃うため、ヘッダーは隠す
+                        />
+                    </div>
                 </div>
             </div>
         </div>
