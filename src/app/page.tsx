@@ -37,10 +37,50 @@ export default function Home() {
     const currentGrid = gridState[gridType];
     const currentMark: CellMark = currentGrid[key] || { state: 'empty', isAutoFilled: false };
 
-    // Cycle: empty → circle → cross → empty
+    // Helper function: Check if placing a circle would violate exclusivity
+    const canPlaceCircle = (): boolean => {
+      if (gridType === 'suspectWeapon') {
+        // Check if row (id1) or column (id2) already has a circle
+        for (const weapon of puzzle.weapons) {
+          const k = `${id1}:${weapon.id}`;
+          if (k !== key && gridState.suspectWeapon[k]?.state === 'circle') return false;
+        }
+        for (const suspect of puzzle.suspects) {
+          const k = `${suspect.id}:${id2}`;
+          if (k !== key && gridState.suspectWeapon[k]?.state === 'circle') return false;
+        }
+      } else if (gridType === 'suspectLocation') {
+        for (const location of puzzle.locations) {
+          const k = `${id1}:${location.id}`;
+          if (k !== key && gridState.suspectLocation[k]?.state === 'circle') return false;
+        }
+        for (const suspect of puzzle.suspects) {
+          const k = `${suspect.id}:${id2}`;
+          if (k !== key && gridState.suspectLocation[k]?.state === 'circle') return false;
+        }
+      } else if (gridType === 'weaponLocation') {
+        for (const location of puzzle.locations) {
+          const k = `${id1}:${location.id}`;
+          if (k !== key && gridState.weaponLocation[k]?.state === 'circle') return false;
+        }
+        for (const weapon of puzzle.weapons) {
+          const k = `${weapon.id}:${id2}`;
+          if (k !== key && gridState.weaponLocation[k]?.state === 'circle') return false;
+        }
+      }
+      return true;
+    };
+
+    // Cycle: empty → circle (if allowed) OR cross → cross → empty
     let nextState: CellMark;
     if (currentMark.state === 'empty') {
-      nextState = { state: 'circle', isAutoFilled: false };
+      // Check if we can place a circle (no other circle in same row/column)
+      if (canPlaceCircle()) {
+        nextState = { state: 'circle', isAutoFilled: false };
+      } else {
+        // Skip circle, go directly to cross
+        nextState = { state: 'cross', isAutoFilled: false };
+      }
     } else if (currentMark.state === 'circle') {
       nextState = { state: 'cross', isAutoFilled: false };
     } else {
