@@ -37,6 +37,11 @@ export default function Home() {
     const currentGrid = gridState[gridType];
     const currentMark: CellMark = currentGrid[key] || { state: 'empty', isAutoFilled: false };
 
+    // CRITICAL: Auto-filled crosses are READ-ONLY and cannot be manually changed
+    if (currentMark.isAutoFilled && currentMark.state === 'cross') {
+      return; // Block any interaction with auto-filled crosses
+    }
+
     // Helper function: Check if placing a circle would violate exclusivity
     const canPlaceCircle = (): boolean => {
       if (gridType === 'suspectWeapon') {
@@ -206,58 +211,66 @@ export default function Home() {
     // Auto-cross logic: when placing a circle
     if (nextState.state === 'circle') {
       if (gridType === 'suspectWeapon') {
-        // Cross out other weapons for this suspect
+        // Cross out other weapons for this suspect (ONLY if empty)
         puzzle.weapons.forEach(w => {
           if (w.id !== id2) {
             const k = `${id1}:${w.id}`;
-            if (!newGridState.suspectWeapon[k] || newGridState.suspectWeapon[k].state !== 'circle') {
+            const cellMark = newGridState.suspectWeapon[k];
+            // CRITICAL: Only auto-fill if cell is empty (never overwrite manual crosses)
+            if (!cellMark || cellMark.state === 'empty') {
               newGridState.suspectWeapon[k] = { state: 'cross', isAutoFilled: true };
             }
           }
         });
-        // Cross out other suspects for this weapon
+        // Cross out other suspects for this weapon (ONLY if empty)
         puzzle.suspects.forEach(s => {
           if (s.id !== id1) {
             const k = `${s.id}:${id2}`;
-            if (!newGridState.suspectWeapon[k] || newGridState.suspectWeapon[k].state !== 'circle') {
+            const cellMark = newGridState.suspectWeapon[k];
+            // CRITICAL: Only auto-fill if cell is empty (never overwrite manual crosses)
+            if (!cellMark || cellMark.state === 'empty') {
               newGridState.suspectWeapon[k] = { state: 'cross', isAutoFilled: true };
             }
           }
         });
       } else if (gridType === 'suspectLocation') {
-        // Cross out other locations for this suspect
+        // Cross out other locations for this suspect (ONLY if empty)
         puzzle.locations.forEach(l => {
           if (l.id !== id2) {
             const k = `${id1}:${l.id}`;
-            if (!newGridState.suspectLocation[k] || newGridState.suspectLocation[k].state !== 'circle') {
+            const cellMark = newGridState.suspectLocation[k];
+            if (!cellMark || cellMark.state === 'empty') {
               newGridState.suspectLocation[k] = { state: 'cross', isAutoFilled: true };
             }
           }
         });
-        // Cross out other suspects for this location
+        // Cross out other suspects for this location (ONLY if empty)
         puzzle.suspects.forEach(s => {
           if (s.id !== id1) {
             const k = `${s.id}:${id2}`;
-            if (!newGridState.suspectLocation[k] || newGridState.suspectLocation[k].state !== 'circle') {
+            const cellMark = newGridState.suspectLocation[k];
+            if (!cellMark || cellMark.state === 'empty') {
               newGridState.suspectLocation[k] = { state: 'cross', isAutoFilled: true };
             }
           }
         });
       } else if (gridType === 'weaponLocation') {
-        // Cross out other locations for this weapon
+        // Cross out other locations for this weapon (ONLY if empty)
         puzzle.locations.forEach(l => {
           if (l.id !== id2) {
             const k = `${id1}:${l.id}`;
-            if (!newGridState.weaponLocation[k] || newGridState.weaponLocation[k].state !== 'circle') {
+            const cellMark = newGridState.weaponLocation[k];
+            if (!cellMark || cellMark.state === 'empty') {
               newGridState.weaponLocation[k] = { state: 'cross', isAutoFilled: true };
             }
           }
         });
-        // Cross out other weapons for this location
+        // Cross out other weapons for this location (ONLY if empty)
         puzzle.weapons.forEach(w => {
           if (w.id !== id1) {
             const k = `${w.id}:${id2}`;
-            if (!newGridState.weaponLocation[k] || newGridState.weaponLocation[k].state !== 'circle') {
+            const cellMark = newGridState.weaponLocation[k];
+            if (!cellMark || cellMark.state === 'empty') {
               newGridState.weaponLocation[k] = { state: 'cross', isAutoFilled: true };
             }
           }
