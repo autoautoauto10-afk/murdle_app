@@ -42,5 +42,6 @@ export type PuzzleData = {
     locationId: string;
   };
   identityClue: string;
+  finalClue?: string; // Add this for compatibility check
   hints: Hint[];
 };

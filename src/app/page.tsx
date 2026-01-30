@@ -21,6 +21,7 @@ export default function Home() {
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     const generated = generateDailyPuzzle(today);
+    console.log('Puzzle Data:', generated); // Debug log
     setPuzzle(generated);
     setHints(generated.hints);
   }, []);
@@ -46,7 +47,6 @@ export default function Home() {
       nextState = { state: 'empty', isAutoFilled: false };
     }
 
-    // Clone all grids
     // Clone all grids
     const newGridState: MultiGridState = {
       suspectWeapon: { ...gridState.suspectWeapon },
@@ -244,7 +244,7 @@ export default function Home() {
   const handleShare = () => {
     const text = `探偵ロジック: 日刊事件簿\n${gameResult === 'won' ? '事件解決 🟩' : '未解決 ⬛️'}\n#探偵ロジック`;
     navigator.clipboard.writeText(text);
-    alert('結果をクリップボードにコピーしました!');
+    alert('結果をクリップボードにコピーしました！');
   };
 
   if (!puzzle) return <div className="min-h-screen bg-stone-100 flex items-center justify-center font-mono">事件ファイルを読み込み中...</div>;
@@ -276,16 +276,14 @@ export default function Home() {
             「すべてのヒントが重要です、探偵。矛盾を見つけてください。」
           </div>
 
-          {puzzle.identityClue && (
-            <div className="mt-8 bg-red-50 border-4 border-red-600 p-4 rounded-lg shadow-md animate-pulse">
-              <h3 className="text-red-700 font-bold flex items-center gap-2 mb-2">
-                <span className="text-xl">🚨</span> 最重要証言（犯人の特定）
-              </h3>
-              <p className="text-red-900 font-bold text-lg">
-                {puzzle.identityClue}
-              </p>
-            </div>
-          )}
+          <div className="mt-6 p-4 border-4 border-red-600 bg-red-50 rounded-lg shadow-md animate-pulse">
+            <h3 className="text-red-800 font-bold flex items-center gap-2 mb-2">
+              <span className="text-xl">🚨</span> 最重要証言（犯人の特定）
+            </h3>
+            <p className="text-red-900 font-bold text-lg">
+              {puzzle?.identityClue || puzzle?.finalClue || "（証言データを読み込み中...）"}
+            </p>
+          </div>
         </div>
 
         {/* Right Column: Multi-Grid */}
@@ -320,7 +318,7 @@ export default function Home() {
             <p className="text-stone-600 mb-8 font-mono">
               {gameResult === 'won'
                 ? 'あなたの推理は完璧でした。真実が明らかになりました。'
-                : '犯人は逃げました!メモを見直してもう一度挑戦してください。'}
+                : '犯人は逃げました！メモを見直してもう一度挑戦してください。'}
             </p>
             <div className="flex flex-col gap-4">
               <button
